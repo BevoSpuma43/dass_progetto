@@ -58,17 +58,35 @@ Il database distingue il **piatto** (per esempio «Fusilli al pomodoro») dall�
 
 ## Avvio locale
 
-Dalla radice del progetto, in Windows PowerShell, prepara Java, Maven e Payara, quindi compila e avvia.
+### Prima installazione su Windows
 
-```powershell
-.\Prepara-DASS.ps1
-mvn verify
-if ($LASTEXITCODE -eq 0) { .\scripts\Avvia-DASS.ps1 }
-```
+Servono **Windows x64**, **PowerShell 5.1 o successivo**, una cartella scrivibile e una connessione Internet per il primo avvio. La procedura è stata verificata con PowerShell 7.
 
-Apri il [diario locale](http://127.0.0.1:8080/dass/). Lo storico contiene già pasti dimostrativi.
+1. Clona il repository o scaricalo da GitHub con **Code → Download ZIP** e decomprimilo.
+2. Apri PowerShell nella cartella che contiene `pom.xml` ed esegui il comando seguente.
 
-Per usare l’analisi delle foto, configura la chiave Anthropic con `.\scripts\Salva-ChiaveHaiku.ps1` e riavvia Payara. La ricerca di ricette richiede la funzione Web search abilitata per l’organizzazione Anthropic.
+   ```powershell
+   .\Installa-DASS.ps1 -Avvia
+   ```
+
+3. Attendi il completamento del deploy, poi apri il [diario locale](http://127.0.0.1:8080/dass/). Nello storico trovi già cinque pasti dimostrativi.
+
+Lo script [Installa-DASS.ps1](Installa-DASS.ps1) scarica e verifica **OpenJDK 21**, **Maven** e **Payara Micro** in `.dass-tools/`, quindi compila `target/dass.war`. H2 è incluso in Payara Micro e crea `var/demo/dass.mv.db` al primo avvio. Gli strumenti sono installati nella cartella del progetto e vengono riutilizzati alle esecuzioni successive.
+
+### Compilazione e riavvio
+
+- Usa `.\Installa-DASS.ps1` per installare e compilare senza avviare il server.
+- Se la porta 8080 è occupata, usa `.\Installa-DASS.ps1 -Avvia -Porta 8081` e apri [il diario sulla porta 8081](http://127.0.0.1:8081/dass/).
+- Premi **Ctrl+C** nella finestra del server per fermarlo. Se il WAR è già compilato, questi comandi preparano una nuova finestra PowerShell e riavviano il server con lo stesso archivio.
+
+  ```powershell
+  .\Prepara-DASS.ps1
+  .\scripts\Avvia-DASS.ps1
+  ```
+
+### Analisi delle foto
+
+Per abilitare l’analisi, esegui `.\scripts\Salva-ChiaveHaiku.ps1`, inserisci la tua chiave Anthropic nel prompt mascherato e riavvia Payara. La ricerca delle ricette richiede **Web search** abilitato per l’organizzazione Anthropic. Il diario e lo storico dimostrativo sono disponibili anche senza chiave.
 
 Per configurazione, contratti REST e collaudi, consulta la [guida tecnica](docs/guida-tecnica.md).
 
