@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence" version="3.0">
+  <persistence-unit name="dass" transaction-type="JTA">
+    <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
+    <jta-data-source>java:app/jdbc/Dass</jta-data-source>
+    <class>it.unisi.dass.persistenza.Paziente</class>
+    <class>it.unisi.dass.persistenza.VoceCatalogo</class>
+    <class>it.unisi.dass.persistenza.Piatto</class>
+    <class>it.unisi.dass.persistenza.MemoriaPiatto</class>
+    <class>it.unisi.dass.persistenza.Episodio</class>
+    <class>it.unisi.dass.persistenza.Bozza</class>
+    <class>it.unisi.dass.persistenza.Ingrediente</class>
+    <class>it.unisi.dass.persistenza.Feedback</class>
+    <class>it.unisi.dass.persistenza.Esito</class>
+    <class>it.unisi.dass.persistenza.CaricamentoDemo</class>
+    <class>it.unisi.dass.persistenza.Macronutrienti</class>
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+    <properties>
+      <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
+      <property name="eclipselink.ddl-generation.output-mode" value="database"/>
+    </properties>
+  </persistence-unit>
+</persistence>

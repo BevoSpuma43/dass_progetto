@@ -1,0 +1,42 @@
+#requires -Version 5.1
+[CmdletBinding()]
+param([ValidateRange(1,65535)][int]$Porta = 8080)
+
+$ErrorActionPreference = 'Stop'
+$root = Split-Path -Parent $PSScriptRoot
+$war = Join-Path $root 'target\dass.war'
+if (-not $env:JAVA_HOME -or -not $env:DASS_PAYARA_JAR) {
+    throw 'Eseguire Prepara-DASS.ps1 in questa finestra PowerShell.'
+}
+if (-not (Test-Path -LiteralPath $war -PathType Leaf)) {
+    throw 'Manca target\dass.war. Dalla radice del progetto eseguire mvn clean verify.'
+}
+
+$java = Join-Path $env:JAVA_HOME 'bin\java.exe'
+$preboot = Join-Path $PSScriptRoot 'preboot.asadmin'
+$chiaveSalvata = Join-Path $env:LOCALAPPDATA 'DASS\anthropic-key.dpapi'
+$precedente = $env:ANTHROPIC_API_KEY
+$dataDir = $env:DASS_DATA_DIR
+if (-not $dataDir) { $dataDir = 'var\demo' }
+if (-not [IO.Path]::IsPathRooted($dataDir)) { $dataDir = Join-Path $root $dataDir }
+$dataDir = [IO.Directory]::CreateDirectory($dataDir).FullName
+try {
+    if ([IO.File]::Exists($chiaveSalvata)) {
+        try {
+            $protetta = ConvertTo-SecureString -String ([IO.File]::ReadAllText($chiaveSalvata))
+            try {
+                $env:ANTHROPIC_API_KEY = [System.Net.NetworkCredential]::new('', $protetta).Password
+            } finally { $protetta.Dispose() }
+        } catch {
+            throw 'Chiave salvata illeggibile. Eseguire scripts\Salva-ChiaveHaiku.ps1 e riprovare.'
+        }
+    }
+    Write-Host "Archivio DASS: $dataDir\dass.mv.db"
+    Push-Location -LiteralPath $dataDir
+    try {
+        & $java -jar $env:DASS_PAYARA_JAR --noCluster --disablePhoneHome --prebootcommandfile $preboot --port $Porta --contextroot /dass --deploy $war
+        if ($LASTEXITCODE -ne 0) { throw "Payara terminato con codice $LASTEXITCODE." }
+    } finally { Pop-Location }
+} finally {
+    $env:ANTHROPIC_API_KEY = $precedente
+}

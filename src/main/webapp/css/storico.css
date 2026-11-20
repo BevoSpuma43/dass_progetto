@@ -1,0 +1,22 @@
+header a { text-decoration: none; }
+main { margin: clamp(2rem, 5vw, 4rem) 0; }
+.nota-storico { margin: 0 0 1.5rem; color: #495e57; }
+#pasti { display: grid; gap: 1rem; padding: 0; list-style: none; }
+.scheda-pasto { background: white; border: 1px solid #c7d4cc; border-radius: .75rem; padding: clamp(1rem, 3vw, 1.65rem); }
+.intestazione-pasto { display: flex; align-items: center; gap: .9rem; }
+.intestazione-pasto img { width: 3.5rem; height: 3.5rem; border-radius: .5rem; object-fit: cover; }
+.intestazione-pasto h2 { margin: .25rem 0 0; font-size: 1.35rem; overflow-wrap: anywhere; }
+.intestazione-pasto time, .valori-pasto dt { color: #495e57; font-size: .9rem; }
+.valori-pasto {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
+  gap: .75rem 1.2rem; padding: .95rem 0; border-block: 1px solid #dce5df;
+}
+.valori-pasto dd { margin: .25rem 0 0; font-weight: 650; font-variant-numeric: tabular-nums; }
+.stima-pasto { color: #165849; }
+.stima-pasto strong { font-size: 1.25rem; }
+.scheda-pasto summary { cursor: pointer; width: fit-content; color: #19584d; text-underline-offset: .2em; }
+.scheda-pasto summary:hover { text-decoration: underline; }
+.ingredienti:empty { display: none; }
+.ingredienti { padding-left: 1.2rem; margin-bottom: 0; }
+.ingredienti li + li { margin-top: .45rem; }
+.riprova-dettaglio { margin-top: .5rem; }

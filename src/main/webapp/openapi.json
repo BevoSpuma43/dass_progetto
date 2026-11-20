@@ -1,0 +1,751 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "API REST DASS",
+    "version": "0.1.0",
+    "description": "API del diario alimentare dimostrativo, dall’analisi di una foto alla registrazione e allo storico dei pasti. I valori della simulazione sono didattici."
+  },
+  "servers": [{"url": "/dass", "description": "Applicazione DASS"}],
+  "tags": [
+    {"name": "Servizio"},
+    {"name": "Analisi"},
+    {"name": "Bozze"},
+    {"name": "Pasti"},
+    {"name": "Storico"}
+  ],
+  "paths": {
+    "/api/stato": {
+      "get": {
+        "operationId": "leggiStato",
+        "tags": ["Servizio"],
+        "summary": "Verifica lo stato di DASS",
+        "responses": {
+          "200": {
+            "description": "Il backend risponde.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["stato"],
+                  "properties": {"stato": {"type": "string", "enum": ["ok"]}}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalogo": {
+      "get": {
+        "operationId": "cercaCatalogo",
+        "tags": ["Servizio"],
+        "summary": "Consulta le schede del catalogo",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Filtro facoltativo per parola o preparazione.",
+            "schema": {"type": "string", "example": "farina 0"}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Schede e valori per 100 g.",
+            "content": {
+              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/VoceCatalogo"}}}
+            }
+          }
+        }
+      }
+    },
+    "/api/demo/archivio": {
+      "get": {
+        "operationId": "riepilogoArchivio",
+        "tags": ["Servizio"],
+        "summary": "Leggi il riepilogo dell’archivio demo",
+        "responses": {
+          "200": {
+            "description": "Conteggi e identificativi degli episodi.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ArchivioDemo"}}}
+          }
+        }
+      }
+    },
+    "/api/analisi-piatto": {
+      "post": {
+        "operationId": "analizzaPiatto",
+        "tags": ["Analisi"],
+        "summary": "Analizza una foto e crea una bozza",
+        "description": "Invia foto e caption a Haiku per stimare gli ingredienti. In caso di errore esterno, usa la bozza salvata per completare l’inserimento manualmente.",
+        "parameters": [{"$ref": "#/components/parameters/HeaderAnalisi"}],
+        "requestBody": {
+          "required": true,
+          "content": {"multipart/form-data": {"schema": {"$ref": "#/components/schemas/CaricamentoFoto"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Bozza con gli ingredienti proposti.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
+          },
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "403": {"$ref": "#/components/responses/OrigineNonValida"},
+          "413": {"$ref": "#/components/responses/FotoGrande"},
+          "415": {"$ref": "#/components/responses/FotoNonValida"},
+          "429": {
+            "description": "Raggiunto il limite del servizio di analisi. La risposta include la bozza se è già stata salvata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {"$ref": "#/components/schemas/BozzaConErrore"},
+                    {"$ref": "#/components/schemas/Errore"}
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Il servizio di analisi ha restituito un errore o una risposta illeggibile. La risposta include la bozza se è già stata salvata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {"$ref": "#/components/schemas/BozzaConErrore"},
+                    {"$ref": "#/components/schemas/Errore"}
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Servizio temporaneamente indisponibile o chiave Anthropic assente. La risposta include la bozza se è già stata salvata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {"$ref": "#/components/schemas/BozzaConErrore"},
+                    {"$ref": "#/components/schemas/Errore"}
+                  ]
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Il servizio di analisi ha impiegato troppo tempo a rispondere. La risposta include la bozza se è già stata salvata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {"$ref": "#/components/schemas/BozzaConErrore"},
+                    {"$ref": "#/components/schemas/Errore"}
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prove/haiku": {
+      "post": {
+        "operationId": "provaHaiku",
+        "tags": ["Analisi"],
+        "summary": "Prova Haiku senza salvare una bozza",
+        "parameters": [{"$ref": "#/components/parameters/HeaderProva"}],
+        "requestBody": {
+          "required": true,
+          "content": {"multipart/form-data": {"schema": {"$ref": "#/components/schemas/CaricamentoFoto"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Proposta grezza di Haiku.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PropostaHaiku"}}}
+          },
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "403": {"$ref": "#/components/responses/OrigineNonValida"},
+          "413": {"$ref": "#/components/responses/FotoGrande"},
+          "415": {"$ref": "#/components/responses/FotoNonValida"},
+          "429": {"$ref": "#/components/responses/LimiteAPI"},
+          "502": {"$ref": "#/components/responses/ErroreAnalisi"},
+          "503": {"$ref": "#/components/responses/ServizioIndisponibile"},
+          "504": {"$ref": "#/components/responses/AttesaScaduta"}
+        }
+      }
+    },
+    "/api/bozze/{id}": {
+      "get": {
+        "operationId": "leggiBozza",
+        "tags": ["Bozze"],
+        "summary": "Leggi la bozza",
+        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
+        "responses": {
+          "200": {
+            "description": "Foto, ingredienti, revisione e scadenza della bozza.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      },
+      "delete": {
+        "operationId": "rimuoviBozza",
+        "tags": ["Bozze"],
+        "summary": "Rimuovi la bozza",
+        "description": "I pasti già registrati con questa bozza restano nello storico.",
+        "parameters": [
+          {"$ref": "#/components/parameters/IdBozza"},
+          {
+            "name": "revisione",
+            "in": "query",
+            "description": "Revisione attesa. Facoltativa.",
+            "schema": {"type": "integer", "format": "int64", "minimum": 0}
+          }
+        ],
+        "responses": {
+          "204": {"description": "Bozza rimossa o già assente."},
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "409": {"$ref": "#/components/responses/Conflitto"}
+        }
+      }
+    },
+    "/api/bozze/{id}/foto": {
+      "get": {
+        "operationId": "leggiFotoBozza",
+        "tags": ["Bozze"],
+        "summary": "Leggi la foto della bozza",
+        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
+        "responses": {
+          "200": {
+            "description": "Immagine JPEG.",
+            "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    },
+    "/api/bozze/{id}/ingredienti": {
+      "put": {
+        "operationId": "aggiornaIngredienti",
+        "tags": ["Bozze"],
+        "summary": "Aggiorna gli ingredienti della bozza",
+        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CorrezioneBozza"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Bozza aggiornata.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
+          },
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "404": {"$ref": "#/components/responses/RisorsaAssente"},
+          "409": {"$ref": "#/components/responses/Conflitto"}
+        }
+      }
+    },
+    "/api/bozze/{id}/anteprima": {
+      "post": {
+        "operationId": "calcolaAnteprima",
+        "tags": ["Bozze"],
+        "summary": "Calcola i macro e la simulazione di una bozza",
+        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CalcoloBozza"}}}
+        },
+        "responses": {
+          "200": {
+            "description": "Anteprima completa o elenco dei dati mancanti.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Anteprima"}}}
+          },
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "404": {"$ref": "#/components/responses/RisorsaAssente"},
+          "409": {"$ref": "#/components/responses/Conflitto"}
+        }
+      }
+    },
+    "/api/pasti": {
+      "post": {
+        "operationId": "registraPasto",
+        "tags": ["Pasti"],
+        "summary": "Registra un pasto nel diario",
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ConfermaPasto"}}}
+        },
+        "responses": {
+          "201": {
+            "description": "Pasto registrato, oppure conferma ripetuta con la stessa chiave.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PastoRegistrato"}}},
+            "headers": {
+              "Location": {
+                "description": "URL del dettaglio del pasto.",
+                "schema": {"type": "string", "format": "uri"}
+              }
+            }
+          },
+          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
+          "404": {"$ref": "#/components/responses/RisorsaAssente"},
+          "409": {"$ref": "#/components/responses/Conflitto"},
+          "503": {"$ref": "#/components/responses/ServizioIndisponibile"}
+        }
+      }
+    },
+    "/api/pasti/{id}": {
+      "get": {
+        "operationId": "leggiPasto",
+        "tags": ["Pasti"],
+        "summary": "Leggi ingredienti, totali e simulazione del pasto",
+        "parameters": [{"$ref": "#/components/parameters/IdPasto"}],
+        "responses": {
+          "200": {
+            "description": "Dettaglio del pasto registrato.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DettaglioPasto"}}}
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    },
+    "/api/pasti/{id}/foto": {
+      "get": {
+        "operationId": "leggiFotoPasto",
+        "tags": ["Pasti"],
+        "summary": "Leggi la foto o la miniatura del pasto",
+        "parameters": [
+          {"$ref": "#/components/parameters/IdPasto"},
+          {
+            "name": "miniatura",
+            "in": "query",
+            "description": "Richiedi la miniatura.",
+            "schema": {"type": "boolean", "default": false}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Immagine JPEG.",
+            "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    },
+    "/api/piatti/{id}/pasti": {
+      "get": {
+        "operationId": "elencaPastiPiatto",
+        "tags": ["Storico"],
+        "summary": "Elenca i pasti associati a un piatto",
+        "parameters": [{"$ref": "#/components/parameters/IdPiatto"}],
+        "responses": {
+          "200": {
+            "description": "Episodi dal più recente.",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/RiepilogoPasto"}}
+              }
+            }
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    },
+    "/api/pazienti/{id}/piatti": {
+      "get": {
+        "operationId": "elencaPiattiPaziente",
+        "tags": ["Storico"],
+        "summary": "Elenca i piatti del profilo",
+        "parameters": [{"$ref": "#/components/parameters/IdPaziente"}],
+        "responses": {
+          "200": {
+            "description": "Piatti con l’ultimo episodio salvato.",
+            "content": {
+              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Piatto"}}}
+            }
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    },
+    "/api/pazienti/{id}/pasti": {
+      "get": {
+        "operationId": "elencaPastiPaziente",
+        "tags": ["Storico"],
+        "summary": "Leggi lo storico degli inserimenti",
+        "parameters": [{"$ref": "#/components/parameters/IdPaziente"}],
+        "responses": {
+          "200": {
+            "description": "Pasti dal più recente con i macro e la simulazione salvati.",
+            "content": {
+              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/PastoStorico"}}}
+            }
+          },
+          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "IdBozza": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string", "format": "uuid"}
+      },
+      "IdPasto": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string", "example": "pasta-01"}
+      },
+      "IdPiatto": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string", "example": "piatto-pasta"}
+      },
+      "IdPaziente": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {"type": "string", "example": "paz-demo"}
+      },
+      "HeaderAnalisi": {
+        "name": "X-DASS-Analisi",
+        "in": "header",
+        "required": true,
+        "schema": {"type": "string", "enum": ["1"], "default": "1"}
+      },
+      "HeaderProva": {
+        "name": "X-DASS-Prova",
+        "in": "header",
+        "required": true,
+        "schema": {"type": "string", "enum": ["1"], "default": "1"}
+      }
+    },
+    "responses": {
+      "RichiestaNonValida": {
+        "description": "Parametri o corpo della richiesta non validi.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "OrigineNonValida": {
+        "description": "Manca l’header obbligatorio o il suo valore è diverso da 1.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "RisorsaAssente": {
+        "description": "Risorsa inesistente o bozza scaduta.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "Conflitto": {
+        "description": "Revisione superata o conflitto durante la registrazione.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "FotoGrande": {
+        "description": "Foto troppo grande per dimensione o risoluzione.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "FotoNonValida": {
+        "description": "Formato della richiesta o immagine non supportati.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "LimiteAPI": {
+        "description": "Raggiunto il limite del servizio di analisi.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "ErroreAnalisi": {
+        "description": "Il servizio di analisi ha restituito un errore o una risposta illeggibile.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "ServizioIndisponibile": {
+        "description": "Servizio temporaneamente indisponibile o chiave Anthropic assente.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      },
+      "AttesaScaduta": {
+        "description": "Il servizio di analisi ha impiegato troppo tempo a rispondere.",
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+      }
+    },
+    "schemas": {
+      "Errore": {
+        "type": "object",
+        "required": ["codice", "messaggio"],
+        "properties": {"codice": {"type": "string"}, "messaggio": {"type": "string"}}
+      },
+      "Macronutrienti": {
+        "type": "object",
+        "required": ["carboidratiG", "proteineG", "grassiG", "kcal"],
+        "properties": {
+          "carboidratiG": {"type": "number"},
+          "proteineG": {"type": "number"},
+          "grassiG": {"type": "number"},
+          "kcal": {"type": "number"}
+        }
+      },
+      "VoceCatalogo": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string", "example": "pasta-cotta-v1"},
+          "nome": {"type": "string", "example": "Pasta di semola"},
+          "preparazione": {"type": "string", "enum": ["crudo", "cotto", "non_noto"]},
+          "unita": {"type": "string", "example": "g"},
+          "versione": {"type": "string"},
+          "fonte": {"type": "string"},
+          "indiceGlicemico": {"type": "string"},
+          "per100g": {"$ref": "#/components/schemas/Macronutrienti"}
+        }
+      },
+      "CaricamentoFoto": {
+        "type": "object",
+        "required": ["foto"],
+        "properties": {
+          "foto": {
+            "type": "string",
+            "format": "binary",
+            "description": "File JPEG o PNG di massimo 5 MiB."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Descrizione facoltativa del piatto."
+          }
+        }
+      },
+      "RigaIngrediente": {
+        "type": "object",
+        "required": ["nome"],
+        "properties": {
+          "rigaId": {
+            "type": "string",
+            "description": "ID ricevuto nella bozza. Omettilo per aggiungere una riga."
+          },
+          "nome": {"type": "string", "maxLength": 500, "example": "Pasta di semola"},
+          "quantitaG": {
+            "type": "number",
+            "example": 160,
+            "minimum": 0,
+            "exclusiveMinimum": true,
+            "nullable": true
+          },
+          "stato": {"type": "string", "enum": ["crudo", "cotto", "non_noto"]},
+          "voceCatalogoId": {"type": "string", "example": "pasta-cotta-v1", "nullable": true},
+          "sceltaCatalogoManuale": {"type": "boolean"}
+        }
+      },
+      "Ingrediente": {
+        "allOf": [
+          {"$ref": "#/components/schemas/RigaIngrediente"},
+          {
+            "type": "object",
+            "properties": {
+              "origineQuantita": {
+                "type": "string",
+                "enum": ["caption", "ricetta", "stimata", "corretta", "da_chiarire"]
+              },
+              "statoAbbinamento": {"type": "string"},
+              "unita": {"type": "string"},
+              "motivazione": {"type": "string"},
+              "fonteUrl": {"type": "string"},
+              "fonteTitolo": {"type": "string"},
+              "notaAbbinamento": {"type": "string"},
+              "catalogo": {"$ref": "#/components/schemas/VoceCatalogo"},
+              "contributo": {
+                "anyOf": [{"$ref": "#/components/schemas/Macronutrienti"}, {"$ref": "#/components/schemas/Nullo"}]
+              }
+            }
+          }
+        ]
+      },
+      "PropostaHaiku": {
+        "type": "object",
+        "required": ["ingredienti", "dubbi"],
+        "properties": {
+          "modello": {"type": "string"},
+          "origineAnalisi": {"type": "string"},
+          "statoAnalisi": {"type": "string"},
+          "ingredienti": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
+          "dubbi": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "Bozza": {
+        "allOf": [
+          {"$ref": "#/components/schemas/PropostaHaiku"},
+          {
+            "type": "object",
+            "required": ["bozzaId", "revisione", "scadeAlle", "fotoUrl"],
+            "properties": {
+              "bozzaId": {"type": "string", "format": "uuid"},
+              "revisione": {"type": "integer", "format": "int64", "minimum": 0},
+              "caption": {"type": "string"},
+              "scadeAlle": {"type": "string", "format": "date-time"},
+              "fotoUrl": {"type": "string"}
+            }
+          }
+        ]
+      },
+      "BozzaConErrore": {"allOf": [{"$ref": "#/components/schemas/Bozza"}, {"$ref": "#/components/schemas/Errore"}]},
+      "CorrezioneBozza": {
+        "type": "object",
+        "required": ["revisione", "ingredienti"],
+        "properties": {
+          "revisione": {"type": "integer", "format": "int64", "minimum": 0, "example": 1},
+          "ingredienti": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/RigaIngrediente"},
+            "maxItems": 30
+          }
+        }
+      },
+      "CalcoloBozza": {
+        "allOf": [
+          {"$ref": "#/components/schemas/CorrezioneBozza"},
+          {
+            "type": "object",
+            "properties": {
+              "scenarioId": {"type": "string", "enum": ["demo-sintetica-v1"]},
+              "piattoId": {"type": "string", "nullable": true},
+              "consumatoAlle": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Orario ISO 8601 con fuso, se presente."
+              }
+            }
+          }
+        ]
+      },
+      "Simulazione": {
+        "type": "object",
+        "properties": {
+          "scenario": {"type": "string"},
+          "memoriaId": {"type": "string"},
+          "revisioneMemoria": {"type": "integer", "format": "int64", "minimum": 0},
+          "memoriaInizialeG": {"type": "number"},
+          "memoriaCorrenteG": {"type": "number"},
+          "varianzaIniziale": {"type": "number"},
+          "varianzaCorrente": {"type": "number"},
+          "unitaSimulate": {"type": "number", "description": "Risultato didattico su un profilo sintetico."}
+        }
+      },
+      "Anteprima": {
+        "type": "object",
+        "properties": {
+          "stato": {"type": "string", "enum": ["completa", "incompleta"]},
+          "righe": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
+          "daCompletare": {"type": "array", "items": {"type": "string"}},
+          "profilo": {"type": "object"},
+          "versioneRegola": {"type": "string"},
+          "origineAnalisi": {"type": "string"},
+          "consumatoAlle": {"type": "string", "format": "date-time"},
+          "totali": {
+            "anyOf": [{"$ref": "#/components/schemas/Macronutrienti"}, {"$ref": "#/components/schemas/Nullo"}]
+          },
+          "simulazione": {
+            "anyOf": [{"$ref": "#/components/schemas/Simulazione"}, {"$ref": "#/components/schemas/Nullo"}]
+          }
+        }
+      },
+      "ConfermaPasto": {
+        "type": "object",
+        "required": ["richiestaId", "bozzaId", "revisione", "consumatoAlle", "ingredienti"],
+        "properties": {
+          "richiestaId": {
+            "type": "string",
+            "description": "Chiave idempotente. Riutilizzala solo per ripetere la stessa conferma."
+          },
+          "bozzaId": {"type": "string", "format": "uuid"},
+          "revisione": {"type": "integer", "format": "int64", "minimum": 0, "example": 1},
+          "consumatoAlle": {"type": "string", "format": "date-time", "example": "2026-11-20T08:30:00+01:00"},
+          "piattoId": {
+            "type": "string",
+            "description": "ID di un piatto già registrato, in alternativa a nomePiatto."
+          },
+          "nomePiatto": {"type": "string", "maxLength": 200, "example": "Pasta al pomodoro"},
+          "ingredienti": {
+            "type": "array",
+            "items": {"$ref": "#/components/schemas/RigaIngrediente"},
+            "maxItems": 30
+          }
+        },
+        "oneOf": [{"required": ["piattoId"]}, {"required": ["nomePiatto"]}]
+      },
+      "PastoRegistrato": {
+        "type": "object",
+        "required": ["pastoId", "piattoId"],
+        "properties": {"pastoId": {"type": "string"}, "piattoId": {"type": "string"}}
+      },
+      "RigaStorico": {
+        "type": "object",
+        "required": ["pastoId", "nomePiatto", "consumatoAlle", "miniaturaUrl", "stimaOriginale"],
+        "properties": {
+          "pastoId": {"type": "string"},
+          "nomePiatto": {"type": "string"},
+          "consumatoAlle": {"type": "string", "format": "date-time"},
+          "miniaturaUrl": {"type": "string"},
+          "stimaOriginale": {"type": "number", "description": "Unità simulate salvate alla registrazione."}
+        }
+      },
+      "PastoStorico": {
+        "allOf": [
+          {"$ref": "#/components/schemas/RigaStorico"},
+          {
+            "type": "object",
+            "required": ["totali"],
+            "properties": {"totali": {"$ref": "#/components/schemas/Macronutrienti"}}
+          }
+        ]
+      },
+      "RiepilogoPasto": {
+        "allOf": [
+          {"$ref": "#/components/schemas/RigaStorico"},
+          {
+            "type": "object",
+            "properties": {
+              "piattoId": {"type": "string"},
+              "fotoUrl": {"type": "string"},
+              "statoFeedback": {"type": "string", "enum": ["registrato", "in_attesa"]}
+            }
+          }
+        ]
+      },
+      "DettaglioPasto": {
+        "allOf": [
+          {"$ref": "#/components/schemas/RiepilogoPasto"},
+          {
+            "type": "object",
+            "properties": {
+              "caption": {"type": "string"},
+              "versioneRegola": {"type": "string"},
+              "versioneProfilo": {"type": "string"},
+              "indiceGlicemico": {"type": "string"},
+              "feedback": {"type": "object", "nullable": true},
+              "ingredienti": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
+              "totali": {"$ref": "#/components/schemas/Macronutrienti"},
+              "profilo": {"type": "object"},
+              "simulazioneOriginale": {"$ref": "#/components/schemas/Simulazione"},
+              "origineAnalisi": {"type": "string"}
+            }
+          }
+        ]
+      },
+      "Piatto": {
+        "type": "object",
+        "properties": {
+          "piattoId": {"type": "string"},
+          "nome": {"type": "string"},
+          "ultimoPasto": {
+            "anyOf": [{"$ref": "#/components/schemas/RiepilogoPasto"}, {"$ref": "#/components/schemas/Nullo"}]
+          }
+        }
+      },
+      "Nullo": {"type": "object", "nullable": true, "enum": [null]},
+      "ArchivioDemo": {
+        "type": "object",
+        "properties": {
+          "pazienti": {"type": "integer"},
+          "piatti": {"type": "integer"},
+          "episodi": {"type": "integer"},
+          "feedback": {"type": "integer"},
+          "episodiId": {"type": "array", "items": {"type": "string"}}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+DASS | fixture-v1 | 19 novembre 2026
+
+Le cinque immagini di cibo sono state generate per questo prototipo. Ogni coppia
+JPG contiene la foto sintetica e la sua miniatura larga 120 px. Le prime quattro
+ritraggono porzioni della stessa ricetta su piatti diversi. controllo-01 ritrae
+riso e piselli. I file rappresentano cinque episodi distinti e sono conservati
+in H2 insieme al pasto a cui appartengono.
+
+DatiDemo.java definisce alimenti e valori per 100 g, profilo, date, porzioni,
+letture ed esiti. Si tratta di dati dimostrativi costruiti per i test.
+La regola fixture-integrazione-v1 registra il caso atteso 50 -> 52 g come dato
+di esempio. La regola demo-sintetica-v1 e il suo calcolo sono previsti allo step 05.

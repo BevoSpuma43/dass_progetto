@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DASS · Home</title>
+  <link rel="stylesheet" href="css/stato.css">
+  <link rel="stylesheet" href="css/home.css">
+  <script src="js/stato.js" defer></script>
+</head>
+<body>
+  <header><span class="mark" aria-hidden="true">D</span> DASS <span class="pagina">Home</span></header>
+  <main>
+    <h1>Diario alimentare</h1>
+    <p id="bozza-rimossa" role="status" hidden>Bozza rimossa.</p>
+    <nav aria-label="Pagine e risorse del diario">
+      <div class="piatto">
+        <div class="intro">
+          <h2>Analizza un piatto</h2>
+          <p>Carica una foto, controlla gli ingredienti proposti da Haiku e correggi le quantità.</p>
+          <div class="azioni">
+            <a class="apri" href="haiku.html">Apri l'analisi <span aria-hidden="true">→</span></a>
+            <a class="apri apri-storico" href="storico.html">Storico inserimenti</a>
+          </div>
+          <a id="ultima-bozza" hidden>Riprendi l’ultima bozza</a>
+        </div>
+        <img src="img/piatto-demo.jpg" width="420" height="420" alt="Fusilli al pomodoro, uno dei piatti della demo">
+      </div>
+      <div class="risorse">
+        <a href="api/catalogo"><strong>Catalogo alimenti</strong><span>Alimenti e valori per 100 g · JSON</span></a>
+        <a href="swagger.html"><strong>Swagger UI</strong><span>Documentazione interattiva delle API REST</span></a>
+      </div>
+    </nav>
+    <section aria-labelledby="titolo-stato">
+      <h2 id="titolo-stato">Connessione al backend</h2>
+      <p id="esito" role="status" aria-live="polite">In attesa della verifica.</p>
+      <div class="azioni">
+        <button id="verifica" type="button">Verifica connessione</button>
+        <a href="api/stato">Stato del servizio (JSON)</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

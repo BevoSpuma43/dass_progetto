@@ -1,0 +1,63 @@
+{
+  "name": "proponi_ingredienti",
+  "description": "Proposta alimentare da confermare, con dubbi sulle quantità.",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "ingredienti": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "nome": {
+              "type": "string"
+            },
+            "quantitaG": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "stato": {
+              "type": "string",
+              "enum": [
+                "crudo",
+                "cotto",
+                "non_noto"
+              ]
+            },
+            "motivazione": {"type":"string","maxLength":500,"description":"Base della quantità per una porzione, stato e assunzioni."},
+            "fonteUrl": {"type":"string","description":"URL esatto della ricetta citata per questa riga, altrimenti stringa vuota."},
+            "origineQuantita": {
+              "type": "string",
+              "enum": [
+                "caption",
+                "ricetta",
+                "stimata",
+                "da_chiarire"
+              ]
+            }
+          },
+          "required": [
+            "nome",
+            "quantitaG",
+            "stato",
+            "origineQuantita", "motivazione", "fonteUrl"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "dubbi": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "required": [
+      "ingredienti",
+      "dubbi"
+    ],
+    "additionalProperties": false
+  }
+}

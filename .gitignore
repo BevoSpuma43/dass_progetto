@@ -1,0 +1,11 @@
+/.dass-tools/
+/target/
+/var/
+/.env
+/images/
+/DASS_handoff_conversazione.md
+/DASS_Planning_Prototipo_e_Orale.md
+/DASS_Registro_Implementazioni.md
+/avvia_progetto.txt
+__pycache__/
+/.env.*

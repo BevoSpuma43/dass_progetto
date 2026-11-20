@@ -1,0 +1,24 @@
+body { width: min(66rem, 100%); }
+.pagina { margin-left: auto; font-size: .95rem; font-weight: 500; letter-spacing: normal; }
+main { margin: clamp(2rem, 5vw, 4rem) 0; }
+.piatto { display: grid; grid-template-columns: 3fr 2fr; background: #164a42; color: white;
+  border-radius: .85rem; overflow: hidden; }
+.intro { align-self: center; padding: clamp(1.4rem, 4vw, 3.5rem); }
+.intro h2 { font: 500 clamp(2rem, 5vw, 3.4rem)/1.05 Georgia, serif; }
+.intro p { max-width: 35ch; line-height: 1.5; margin: .8rem 0 1.5rem; }
+.piatto img { width: 100%; height: 100%; min-height: 14rem; max-height: 21rem; object-fit: cover; }
+.apri { display: inline-flex; align-items: center; gap: .8rem; padding: .75rem 1rem;
+  background: #fff; border-radius: .45rem; text-decoration: none; font-weight: 650; }
+.apri:hover { text-decoration: underline; }
+.apri-storico { border: 1px solid #d0e0da; background: transparent; color: white; }
+#ultima-bozza:not([hidden]) { display: block; width: fit-content; margin-top: 1rem; color: white; }
+.risorse { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .9rem; margin: 1rem 0 2rem; }
+.risorse a { display: grid; gap: .45rem; padding: 1.3rem; background: white; text-decoration: none;
+  border: 1px solid #c7d4cc; border-radius: .65rem; }
+.risorse a:hover strong, .risorse a:focus-visible strong { text-decoration: underline; }
+.risorse strong { font-size: 1.15rem; }
+.risorse span { color: #495e57; font-size: .95rem; }
+@media (max-width: 38rem) {
+  .piatto, .risorse { grid-template-columns: 1fr; }
+  .piatto img { order: -1; height: 11rem; min-height: auto; }
+}
