@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' https://cdn.jsdelivr.net; img-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DASS · Swagger UI</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3/swagger-ui.css" integrity="sha384-Ov4/wv3j2bmct8cDc5X4ngJZohVPzEmc6uDPH8WeljUxO5vtoykvMEfbu9Vh6RaW" crossorigin="anonymous">
+  <link rel="stylesheet" href="css/swagger.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script type="module" src="js/api-locale.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3/swagger-ui-bundle.js" integrity="sha384-h00llMzD1afyNow1pDmnZKlHsUZgp9KE9HXLFXF2CvbwsBY0+WBO4f75SfGwvM4K" crossorigin="anonymous" defer></script>
+  <script src="js/swagger.js" defer></script>
+</head>
+<body>
+  <header>
+    <a href="./">DASS · Home</a>
+    <a href="openapi.json">Specifica OpenAPI (JSON)</a>
+  </header>
+  <p class="avviso-demo avviso-swagger">Demo statica su GitHub Pages: con «Try it out» le richieste sono gestite dall’API nel browser e usano i dati salvati su questo dispositivo.</p>
+  <main>
+    <h1 class="solo-lettori">Documentazione API DASS</h1>
+    <p id="stato-swagger" role="status">Caricamento di Swagger UI.</p>
+    <div id="swagger-ui"></div>
+  </main>
+</body>
+</html>

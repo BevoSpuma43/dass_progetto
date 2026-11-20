@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Demo statica di DASS, il diario alimentare che parte dalla foto di un piatto.">
+  <title>DASS · Home</title>
+  <link rel="stylesheet" href="css/stato.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script type="module" src="js/api-locale.js"></script>
+  <script type="module" src="js/home.js"></script>
+</head>
+<body>
+  <header><span class="mark" aria-hidden="true">D</span> DASS <span class="pagina">Home</span></header>
+  <p class="avviso-demo">Demo statica su GitHub Pages: i dati restano in questo browser. Le unità di insulina sono simulate su un profilo sintetico e non indicano una dose da usare.</p>
+  <main>
+    <h1>Diario alimentare</h1>
+    <p id="bozza-rimossa" role="status" hidden>Bozza rimossa.</p>
+    <nav aria-label="Pagine e risorse del diario">
+      <div class="piatto">
+        <div class="intro">
+          <h2>Analizza un piatto</h2>
+          <p>Carica una foto, controlla gli ingredienti proposti da Haiku e correggi le quantità.</p>
+          <div class="azioni">
+            <a class="apri" href="haiku.html">Apri l'analisi <span aria-hidden="true">→</span></a>
+            <a class="apri apri-storico" href="storico.html">Storico inserimenti</a>
+          </div>
+          <a id="ultima-bozza" hidden>Riprendi l’ultima bozza</a>
+        </div>
+        <img src="img/piatto-demo.jpg" width="420" height="420" alt="Fusilli al pomodoro, uno dei piatti della demo">
+      </div>
+      <div class="risorse">
+        <a href="api.html#api/catalogo"><strong>Catalogo alimenti</strong><span>Alimenti e valori per 100 g · JSON</span></a>
+        <a href="swagger.html"><strong>Swagger UI</strong><span>Documentazione interattiva delle API REST</span></a>
+      </div>
+    </nav>
+    <section aria-labelledby="titolo-archivio">
+      <h2 id="titolo-archivio">Archivio nel browser</h2>
+      <p class="nota-archivio">Questa versione non usa un server. Le API REST del prototipo rispondono dal browser e salvano bozze, pasti e foto in IndexedDB, solo su questo dispositivo.</p>
+      <p id="esito" role="status" aria-live="polite">Lettura dell’archivio…</p>
+      <div class="azioni">
+        <button id="ripristina" type="button">Ripristina i dati dimostrativi</button>
+        <a href="api.html#api/demo/archivio">Riepilogo dell’archivio (JSON)</a>
+        <a href="api.html#api/stato">Stato del servizio (JSON)</a>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

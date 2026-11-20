@@ -1,5 +1,6 @@
 /.dass-tools/
 /target/
+/_site/
 /var/
 /.env
 /images/

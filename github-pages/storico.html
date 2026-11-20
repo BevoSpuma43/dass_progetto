@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DASS · Storico inserimenti</title>
+  <link rel="stylesheet" href="css/stato.css">
+  <link rel="stylesheet" href="css/storico.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script type="module" src="js/api-locale.js"></script>
+  <script src="js/storico.js" defer></script>
+</head>
+<body>
+  <header><span class="mark" aria-hidden="true">D</span> DASS <a href="./">Home</a></header>
+  <p class="avviso-demo">Demo statica su GitHub Pages: i dati restano in questo browser. Le unità di insulina sono simulate su un profilo sintetico e non indicano una dose da usare.</p>
+  <main>
+    <h1>Storico inserimenti</h1>
+    <p class="nota-storico">Valori salvati per i pasti registrati. L’insulina è simulata a scopo didattico su un profilo sintetico.</p>
+    <p id="stato-storico" role="status">Caricamento dello storico.</p>
+    <button type="button" id="riprova-storico" hidden>Riprova</button>
+    <ol id="pasti" aria-label="Pasti dal più recente"></ol>
+  </main>
+  <template id="scheda-pasto">
+    <li>
+      <article class="scheda-pasto">
+        <div class="intestazione-pasto">
+          <img alt="" width="120" height="120" loading="lazy">
+          <div>
+            <time></time>
+            <h2></h2>
+          </div>
+        </div>
+        <dl class="valori-pasto">
+          <div><dt>Carboidrati</dt><dd data-valore="carboidratiG" data-unita="g"></dd></div>
+          <div><dt>Proteine</dt><dd data-valore="proteineG" data-unita="g"></dd></div>
+          <div><dt>Grassi</dt><dd data-valore="grassiG" data-unita="g"></dd></div>
+          <div><dt>Energia</dt><dd data-valore="kcal" data-unita="kcal"></dd></div>
+          <div class="stima-pasto"><dt>Insulina simulata</dt><dd><strong></strong></dd></div>
+        </dl>
+        <details>
+          <summary>Ingredienti e quantità</summary>
+          <p class="stato-dettaglio" role="status" hidden></p>
+          <button type="button" class="riprova-dettaglio" hidden>Riprova</button>
+          <ul class="ingredienti"></ul>
+        </details>
+      </article>
+    </li>
+  </template>
+</body>
+</html>

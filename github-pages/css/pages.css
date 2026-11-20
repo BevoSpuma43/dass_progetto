@@ -1,0 +1,78 @@
+/* Stili aggiunti dalla versione GitHub Pages; gli altri fogli sono quelli del prototipo. */
+.avviso-demo {
+  margin: 1rem 0 0;
+  padding: .7rem 1rem;
+  background: #fff6dc;
+  border: 1px solid #e2cd8f;
+  border-radius: .5rem;
+  color: #5a4710;
+  font-size: .92rem;
+  line-height: 1.45;
+}
+.avviso-swagger { margin: 1rem clamp(1rem, 4vw, 2.5rem) 0; }
+.nota-archivio { margin: .8rem 0 0; max-width: 62ch; line-height: 1.5; color: #495e57; }
+button.secondario { background: white; color: #19584d; border: 1px solid #9fb8ae; }
+
+/* Pannello della chiave Anthropic nella pagina di analisi. */
+#impostazioni-haiku {
+  margin: 0 0 1.25rem;
+  padding: .9rem 1rem;
+  background: #f7faf8;
+  border: 1px solid #c7d4cc;
+  border-radius: .6rem;
+}
+#impostazioni-haiku summary { font-weight: 650; }
+#stato-chiave { font-weight: normal; color: #495e57; }
+#impostazioni-haiku p { max-width: 65ch; line-height: 1.5; }
+#impostazioni-haiku input:not([type="checkbox"]) {
+  width: 100%;
+  margin-bottom: .9rem;
+  padding: .55rem;
+  border: 1px solid #919f98;
+  border-radius: .4rem;
+  font: inherit;
+}
+#impostazioni-haiku label.scelta { display: flex; align-items: center; gap: .5rem; margin: 0 0 .9rem; font-weight: 500; }
+#impostazioni-haiku label.scelta input { display: inline-block; margin: 0; }
+#esito-chiave:empty, #modalita-analisi:empty { display: none; }
+#modalita-analisi { color: #495e57; line-height: 1.5; }
+
+/* Visualizzatore delle risposte api/... */
+.pagina-api header a { text-decoration: none; }
+main.vista-api { margin: clamp(2rem, 5vw, 4rem) 0; }
+.vista-api h1 { font-size: clamp(2.2rem, 6vw, 3.6rem); }
+.vista-api form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+  padding: 1rem;
+  background: white;
+  border: 1px solid #c7d4cc;
+  border-radius: .75rem;
+}
+.vista-api label { font-weight: 700; }
+.vista-api input {
+  flex: 1 1 18rem;
+  min-width: 0;
+  padding: .6rem;
+  border: 1px solid #919f98;
+  border-radius: .4rem;
+  font: inherit;
+}
+#esempi-api { color: #495e57; font-size: .92rem; overflow-wrap: anywhere; }
+.vista-api pre {
+  max-height: 70vh;
+  margin: 1rem 0 0;
+  padding: 1rem;
+  overflow: auto;
+  background: white;
+  border: 1px solid #c7d4cc;
+  border-radius: .6rem;
+  font-size: .85rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.vista-api img { display: block; max-width: 100%; margin-top: 1rem; border-radius: .5rem; }
+.vista-api img[hidden], .vista-api pre[hidden] { display: none; }

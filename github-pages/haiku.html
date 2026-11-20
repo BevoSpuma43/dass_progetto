@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob: data:; connect-src 'self' https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DASS · Analisi del piatto</title>
+  <link rel="stylesheet" href="css/stato.css">
+  <link rel="stylesheet" href="css/haiku.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script type="module" src="js/api-locale.js"></script>
+  <script type="module" src="js/impostazioni-haiku.js"></script>
+  <script src="js/haiku.js" defer></script>
+</head>
+<body>
+  <header><span class="mark" aria-hidden="true">D</span> DASS <a href="./">Home</a></header>
+  <p class="avviso-demo">Demo statica su GitHub Pages: i dati restano in questo browser. Le unità di insulina sono simulate su un profilo sintetico e non indicano una dose da usare.</p>
+  <main>
+    <h1>Analizza un piatto</h1>
+    <form id="prova">
+      <label for="foto">Foto del piatto</label>
+      <input id="foto" name="foto" type="file" accept="image/jpeg,image/png" aria-describedby="formati" required>
+      <small id="formati">JPEG o PNG, fino a 5 MiB.</small>
+      <img id="anteprima" alt="Anteprima del piatto selezionato" hidden>
+      <label for="caption">Descrizione <small>(facoltativa)</small></label>
+      <textarea id="caption" name="caption" maxlength="500" rows="3" placeholder="Es. fusilli al ragù di triglia, porzione normale al ristorante"></textarea>
+      <p>Haiku usa foto e descrizione e cerca online ricette del piatto per stimare i grammi di ogni ingrediente.</p>
+      <details id="impostazioni-haiku">
+        <summary>Chiave Anthropic per Haiku <span id="stato-chiave"></span></summary>
+        <p>Su GitHub Pages non c’è un server che custodisca la chiave: per l’analisi automatica la pagina chiama Haiku con una tua chiave API. La chiave resta in questo browser e viene inviata solo ad api.anthropic.com. Ogni analisi consuma credito del tuo account Anthropic.</p>
+        <label for="chiave-anthropic">Chiave API</label>
+        <input id="chiave-anthropic" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+        <label class="scelta"><input id="ricorda-chiave" type="checkbox"> Ricorda la chiave su questo dispositivo</label>
+        <label for="modello-haiku">Modello</label>
+        <input id="modello-haiku" autocomplete="off" spellcheck="false">
+        <div class="azioni">
+          <button type="button" id="salva-chiave">Salva impostazioni</button>
+          <button type="button" id="rimuovi-chiave" class="secondario">Rimuovi chiave</button>
+        </div>
+        <p id="esito-chiave" role="status"></p>
+      </details>
+      <p id="modalita-analisi"></p>
+      <div class="azioni">
+        <button type="submit">Invia a Haiku</button>
+        <button type="button" id="usa-esempio" class="secondario">Usa la foto di esempio</button>
+      </div>
+    </form>
+    <p id="messaggio" role="status" aria-live="polite"></p>
+    <section id="risultato" hidden>
+      <h2>Ingredienti della tua porzione</h2>
+      <p>Controlla i grammi proposti. Puoi modificarli oppure continuare con le quantità che vedi.</p>
+      <ul id="dubbi" aria-label="Aspetti da chiarire"></ul>
+      <p><a id="fotoBozza">Apri la foto salvata</a> · <a href="api.html#api/catalogo" target="_blank" rel="noopener">Consulta il catalogo</a></p>
+      <form id="correzioni">
+        <table aria-label="Ingredienti e quantità della porzione">
+          <thead><tr><th scope="col">Ingrediente</th><th scope="col">Quantità (g)</th></tr></thead>
+          <tbody id="righe"></tbody>
+        </table>
+        <div class="azioni">
+          <button type="button" id="aggiungi">Aggiungi ingrediente</button>
+          <button type="submit">Salva bozza</button>
+          <button type="submit" id="calcola">Continua con queste quantità</button>
+          <button type="button" id="rimuovi-bozza">Rimuovi bozza</button>
+        </div>
+      </form>
+      <p id="salvataggio" role="status"></p>
+      <section id="nutrizione" aria-labelledby="titolo-nutrizione" hidden>
+        <h2 id="titolo-nutrizione">Anteprima del pasto</h2>
+        <ul id="mancanti"></ul>
+        <div id="calcolo-completo">
+          <dl id="totali"></dl>
+          <details><summary>Contributo e fonte per ingrediente</summary><ul id="contributi"></ul></details>
+          <h3 id="tipo-simulazione">Simulazione didattica di prima occorrenza</h3>
+          <p id="profilo-demo"></p>
+          <p><span id="memoria-demo"></span> <strong id="valore-demo"></strong></p>
+          <small>Esperimento su un profilo sintetico fisso. Il valore simulato non è una dose di insulina da utilizzare.</small>
+        </div>
+      </section>
+      <section id="registrazione" aria-labelledby="titolo-registrazione" hidden>
+        <h2 id="titolo-registrazione">Registra il pasto</h2>
+        <form id="conferma-pasto">
+          <div class="campi-pasto">
+            <label for="piatto-pasto">Piatto
+              <select id="piatto-pasto" name="piatto"><option value="">Nuovo piatto</option></select>
+            </label>
+            <label for="nome-pasto">Nome del nuovo piatto
+              <input id="nome-pasto" name="nomePiatto" maxlength="200" required>
+            </label>
+            <label for="orario-pasto">Data e ora del pasto
+              <input id="orario-pasto" name="orario" type="datetime-local" required>
+            </label>
+          </div>
+          <button type="submit" id="registra-pasto">Registra pasto</button>
+        </form>
+        <p id="stato-registrazione" role="status"></p>
+        <button type="button" id="riprova-registrazione" hidden>Riprova registrazione</button>
+        <div id="pasto-registrato" class="azioni" hidden>
+          <a id="dettaglio-registrato">Dettaglio del pasto (JSON)</a>
+          <a id="storico-registrato">Storico del piatto (JSON)</a>
+        </div>
+      </section>
+      <details><summary>Risposta JSON dell’API</summary><pre id="json"></pre></details>
+    </section>
+  </main>
+  <template id="riga">
+    <tr><td>
+      <input name="nome" aria-label="Alimento" maxlength="500" required>
+      <small class="scheda-associata"></small>
+      <details><summary>Stima e scheda nutrizionale</summary>
+        <p class="motivazione"></p>
+        <p class="nota-abbinamento" hidden></p>
+        <label>Cerca nel catalogo <input type="search" class="filtro-catalogo"></label>
+        <label>Voce del catalogo <select name="voce"><option value="">Da chiarire</option></select></label>
+        <button type="button" class="rimuovi">Rimuovi ingrediente</button>
+      </details>
+    </td><td>
+      <input name="grammi" aria-label="Quantità in grammi" type="number" min="0" step="any" placeholder="Da chiarire">
+      <small class="provenienza"></small>
+    </td></tr>
+  </template>
+</body>
+</html>

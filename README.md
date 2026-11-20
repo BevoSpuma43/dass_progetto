@@ -2,7 +2,7 @@
 
 **DASS è un prototipo didattico per registrare ciò che mangi a partire da una foto.** Propone gli ingredienti e le quantità di una porzione, ti permette di correggerli e salva il pasto con i suoi valori nutrizionali.
 
-[Come funziona](#come-funziona) · [Schermate](#schermate) · [Architettura](#architettura) · [Avvio locale](#avvio-locale)
+[Come funziona](#come-funziona) · [Schermate](#schermate) · [Architettura](#architettura) · [Avvio locale](#avvio-locale) · [Versione GitHub Pages](#versione-github-pages)
 
 ## Come funziona
 
@@ -91,3 +91,19 @@ Per abilitare l’analisi, esegui `.\scripts\Salva-ChiaveHaiku.ps1`, inserisci l
 Per configurazione, contratti REST e collaudi, consulta la [guida tecnica](docs/guida-tecnica.md).
 
 Il [manuale HTML](DASS_Manuale_Progetto.html) descrive anche le tabelle H2, le relazioni tra i dati e i contratti delle API.
+
+## Versione GitHub Pages
+
+La cartella [`github-pages/`](github-pages/) contiene la versione statica del prototipo, pubblicabile su GitHub Pages senza Payara. Le pagine sono quelle del diario. Le API REST rispondono direttamente nel browser, con gli stessi percorsi e lo stesso JSON descritti in [OpenAPI](src/main/webapp/openapi.json), e salvano bozze, pasti e foto in IndexedDB, solo sul dispositivo di chi visita il sito.
+
+- **Dati dimostrativi.** Al primo accesso il browser carica la stessa fixture del backend: profilo sintetico, due piatti e cinque pasti. La home permette di ripristinarla.
+- **Analisi delle foto.** Senza chiave la foto apre una bozza da compilare a mano, mentre **Usa la foto di esempio** riceve una proposta già pronta. Con una chiave Anthropic inserita nella pagina di analisi il browser chiama Haiku direttamente: la chiave resta nel browser e viene inviata solo ad `api.anthropic.com`.
+- **JSON e Swagger UI.** I collegamenti alle API aprono [`api.html`](github-pages/api.html), che mostra la risposta di ogni `GET`. In Swagger UI, **Try it out** usa l'API nel browser.
+
+Lo script [Costruisci-Pages.ps1](scripts/Costruisci-Pages.ps1) prepara il sito in `_site/`. Copia le pagine del prototipo da `src/main/webapp/`, sovrascrive i file adattati di `github-pages/` e aggiunge catalogo, schema dello strumento Haiku e foto della fixture. Per provarlo in locale:
+
+```powershell
+.\scripts\Avvia-Pages.ps1
+```
+
+Poi apri [l'anteprima](http://localhost:8090/). Il workflow [pages.yml](.github/workflows/pages.yml) esegue lo stesso script e pubblica il sito a ogni push su `main`. Per attivarlo la prima volta, un amministratore del repository sceglie **Settings → Pages → Build and deployment → Source: GitHub Actions**. Il sito sarà su <https://bevospuma43.github.io/dass_progetto/>.
