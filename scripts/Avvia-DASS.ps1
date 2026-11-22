@@ -17,7 +17,18 @@ $preboot = Join-Path $PSScriptRoot 'preboot.asadmin'
 $chiaveSalvata = Join-Path $env:LOCALAPPDATA 'DASS\anthropic-key.dpapi'
 $precedente = $env:ANTHROPIC_API_KEY
 $dataDir = $env:DASS_DATA_DIR
-if (-not $dataDir) { $dataDir = 'var\demo' }
+if (-not $dataDir) {
+    $dataDir = 'var\dati'
+    # Un archivio della versione precedente viene spostato qui: all'avvio Payara rimuove paz-demo.
+    $vecchio = Join-Path $root 'var\demo'
+    $nuovo = Join-Path $root $dataDir
+    if ((Test-Path -LiteralPath (Join-Path $vecchio 'dass.mv.db')) -and -not (Test-Path -LiteralPath (Join-Path $nuovo 'dass.mv.db'))) {
+        $null = [IO.Directory]::CreateDirectory($nuovo)
+        Get-ChildItem -LiteralPath $vecchio -Filter 'dass.*.db' | Move-Item -Destination $nuovo
+        if (-not (Get-ChildItem -LiteralPath $vecchio -Force)) { Remove-Item -LiteralPath $vecchio }
+        Write-Host "Archivio spostato da var\demo a $dataDir."
+    }
+}
 if (-not [IO.Path]::IsPathRooted($dataDir)) { $dataDir = Join-Path $root $dataDir }
 $dataDir = [IO.Directory]::CreateDirectory($dataDir).FullName
 try {

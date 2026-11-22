@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DASS · Analisi del piatto</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/analisi.css">
+  <script type="module" src="js/analisi.js"></script>
+</head>
+<body>
+  <header class="testata">
+    <a class="marchio" href="./"><span class="mark" aria-hidden="true">D</span> DASS</a>
+    <nav aria-label="Pagine del diario">
+      <a href="./">Home</a>
+      <a href="analisi.html" aria-current="page">Analizza un piatto</a>
+      <a href="storico.html">Storico</a>
+    </nav>
+    <label class="scelta-profilo">Profilo <select id="profilo"></select></label>
+  </header>
+  <div class="impaginazione">
+    <main>
+      <h1>Analizza un piatto</h1>
+      <form id="analisi" novalidate>
+        <label for="foto">Foto del piatto</label>
+        <input id="foto" name="foto" type="file" accept="image/jpeg,image/png" aria-describedby="formati" required>
+        <small id="formati">JPEG o PNG, fino a 5 MiB. Il browser la ricodifica in JPEG senza metadati.</small>
+        <img id="anteprima" alt="Anteprima del piatto selezionato" hidden>
+        <label for="caption">Descrizione <small>(facoltativa)</small></label>
+        <textarea id="caption" name="caption" maxlength="500" rows="3" placeholder="Es. fusilli al pomodoro, porzione normale al ristorante"></textarea>
+        <div class="campi">
+          <label>Glicemia attuale <small>mg/dL, misurata ora</small>
+            <input name="glicemiaAttuale" type="number" inputmode="numeric" min="20" max="600" step="1" required>
+          </label>
+          <label>Glicemia obiettivo <small>mg/dL, predefinita dal profilo</small>
+            <input name="glicemiaObiettivo" type="number" inputmode="numeric" min="70" max="250" step="1" value="120" required>
+          </label>
+        </div>
+        <label class="consenso">
+          <input type="checkbox" name="consenso" required>
+          <span>Acconsento a inviare foto e descrizione a Payara e, tramite Payara, ad Anthropic (Claude) per l’analisi del piatto.</span>
+        </label>
+        <small>Foto e descrizione viaggiano nel canale cifrato dello scambio di chiavi. Payara non le salva: bozza, foto e proposta vengono salvate solo dopo essere state cifrate in questo browser con la chiave del diario.</small>
+        <button type="submit">Invia a Claude</button>
+      </form>
+      <p id="messaggio" class="stato" role="status" aria-live="polite"></p>
+      <div class="azioni">
+        <button type="button" id="riprova-salvataggio" hidden>Salva di nuovo la bozza cifrata</button>
+        <a id="nuova-analisi" href="analisi.html" hidden>Analizza un altro piatto</a>
+      </div>
+
+      <section id="risultato" aria-labelledby="titolo-risultato" hidden>
+        <div class="intestazione-bozza">
+          <img id="foto-bozza" alt="Foto del piatto della bozza" hidden>
+          <div>
+            <h2 id="titolo-risultato">Ingredienti della tua porzione</h2>
+            <p id="descrizione-bozza"></p>
+          </div>
+        </div>
+        <p>Controlla i grammi proposti. Puoi modificarli, associare la scheda del catalogo e poi calcolare carboidrati e bolo.</p>
+        <ul id="dubbi" aria-label="Aspetti da chiarire"></ul>
+        <p><a href="api/catalogo" target="_blank" rel="noopener">Consulta il catalogo</a></p>
+        <form id="correzioni">
+          <table aria-label="Ingredienti e quantità della porzione">
+            <thead><tr><th scope="col">Ingrediente</th><th scope="col">Quantità (g)</th></tr></thead>
+            <tbody id="righe"></tbody>
+          </table>
+          <div class="azioni">
+            <button type="button" id="aggiungi" class="secondario">Aggiungi ingrediente</button>
+            <button type="submit" value="salva">Salva bozza</button>
+            <button type="submit" value="calcola" id="calcola">Calcola carboidrati e bolo</button>
+            <button type="button" id="rimuovi-bozza" class="pericolo">Rimuovi bozza</button>
+          </div>
+        </form>
+        <p id="salvataggio" class="stato" role="status"></p>
+      </section>
+
+      <section id="nutrizione" aria-labelledby="titolo-nutrizione" hidden>
+        <h2 id="titolo-nutrizione">Valori del pasto</h2>
+        <ul id="mancanti"></ul>
+        <div id="calcolo-completo">
+          <dl id="totali"></dl>
+          <details><summary>Contributo e fonte per ingrediente</summary><ul id="contributi"></ul></details>
+        </div>
+      </section>
+
+      <section id="bolo" aria-labelledby="titolo-bolo" hidden>
+        <h2 id="titolo-bolo">Bolo di insulina</h2>
+        <form id="form-bolo" novalidate>
+          <div class="campi">
+            <label>Glicemia attuale <small>mg/dL</small>
+              <input name="glicemiaAttuale" type="number" inputmode="numeric" min="20" max="600" step="1" required>
+            </label>
+            <label>Glicemia obiettivo <small>mg/dL</small>
+              <input name="glicemiaObiettivo" type="number" inputmode="numeric" min="70" max="250" step="1" required>
+            </label>
+          </div>
+        </form>
+        <p id="parametri-bolo"></p>
+        <div id="risultato-bolo">
+          <p class="formula"><code>bolo = carboidrati / ICR + (glicemia attuale − glicemia obiettivo) / ISF</code></p>
+          <p class="sostituzione"></p>
+          <p class="totale-bolo"><strong></strong> <span>bolo calcolato</span></p>
+          <ul class="avvisi"></ul>
+        </div>
+        <small>Calcolo didattico: non considera l’insulina ancora attiva, l’attività fisica né le indicazioni del diabetologo e non è una prescrizione.</small>
+      </section>
+
+      <section id="registrazione" aria-labelledby="titolo-registrazione" hidden>
+        <h2 id="titolo-registrazione">Registra il pasto</h2>
+        <form id="conferma-pasto">
+          <div class="campi">
+            <label>Nome del piatto
+              <input name="nomePiatto" maxlength="200" required>
+            </label>
+            <label>Data e ora del pasto
+              <input name="orario" type="datetime-local" required>
+            </label>
+          </div>
+          <button type="submit" id="registra-pasto">Registra pasto cifrato</button>
+        </form>
+        <p id="stato-registrazione" class="stato" role="status"></p>
+        <p id="pasto-registrato" hidden><a href="storico.html">Apri lo storico dei pasti</a></p>
+      </section>
+
+      <details id="dati-bozza" hidden><summary>Bozza decifrata nel browser (JSON)</summary><pre id="json"></pre></details>
+    </main>
+    <aside id="pannello-scambi" aria-labelledby="titolo-scambi">
+      <h2 id="titolo-scambi">Scambio di chiavi</h2>
+      <dl class="riepilogo-pannello">
+        <dt>Profilo attivo</dt><dd class="profilo-pannello"></dd>
+        <dt>Chiave del diario</dt><dd class="chiave-diario"></dd>
+      </dl>
+      <p class="spiegazione">Ogni azione che legge o scrive H2 apre un nuovo scambio ECDH. La chiave del canale cifra richieste e risposte; la chiave del diario, separata, cifra i documenti e non lascia mai il browser.</p>
+      <p class="nessuno-scambio">Nessuno scambio in questa pagina.</p>
+      <ol class="tracce"></ol>
+    </aside>
+  </div>
+  <template id="riga">
+    <tr><td>
+      <input name="nome" aria-label="Alimento" maxlength="500" required>
+      <small class="scheda-associata"></small>
+      <details><summary>Stima e scheda nutrizionale</summary>
+        <p class="motivazione"></p>
+        <p class="nota-abbinamento" hidden></p>
+        <label>Cerca nel catalogo <input type="search" class="filtro-catalogo"></label>
+        <label>Voce del catalogo <select name="voce"><option value="">Da chiarire</option></select></label>
+        <button type="button" class="rimuovi secondario">Rimuovi ingrediente</button>
+      </details>
+    </td><td>
+      <input name="grammi" aria-label="Quantità in grammi" type="number" min="0" step="any" placeholder="Da chiarire">
+      <small class="provenienza"></small>
+    </td></tr>
+  </template>
+</body>
+</html>

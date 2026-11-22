@@ -2,15 +2,9 @@
 <persistence xmlns="https://jakarta.ee/xml/ns/persistence" version="3.0">
   <persistence-unit name="dass-test" transaction-type="RESOURCE_LOCAL">
     <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
-    <class>it.unisi.dass.persistenza.Paziente</class>
+    <class>it.unisi.dass.persistenza.Profilo</class>
+    <class>it.unisi.dass.persistenza.DocumentoCifrato</class>
     <class>it.unisi.dass.persistenza.VoceCatalogo</class>
-    <class>it.unisi.dass.persistenza.Piatto</class>
-    <class>it.unisi.dass.persistenza.MemoriaPiatto</class>
-    <class>it.unisi.dass.persistenza.Episodio</class>
-    <class>it.unisi.dass.persistenza.Bozza</class>
-    <class>it.unisi.dass.persistenza.Ingrediente</class>
-    <class>it.unisi.dass.persistenza.Feedback</class>
-    <class>it.unisi.dass.persistenza.Esito</class>
     <class>it.unisi.dass.persistenza.CaricamentoDemo</class>
     <class>it.unisi.dass.persistenza.Macronutrienti</class>
     <exclude-unlisted-classes>true</exclude-unlisted-classes>

@@ -1,22 +1,49 @@
-header a { text-decoration: none; }
-main { margin: clamp(2rem, 5vw, 4rem) 0; }
-.nota-storico { margin: 0 0 1.5rem; color: #495e57; }
+.nota-storico { margin: 0 0 1rem; color: var(--secondario); }
+.solo-lettori { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 #pasti { display: grid; gap: 1rem; padding: 0; list-style: none; }
-.scheda-pasto { background: white; border: 1px solid #c7d4cc; border-radius: .75rem; padding: clamp(1rem, 3vw, 1.65rem); }
+#pasti:empty { display: none; }
+.scheda-pasto { padding: clamp(1rem, 3vw, 1.6rem); background: white; border: 1px solid var(--bordo); border-radius: .75rem; }
+.evidenziato .scheda-pasto, tr.evidenziato { outline: 3px solid #e3c06b; outline-offset: 2px; }
 .intestazione-pasto { display: flex; align-items: center; gap: .9rem; }
-.intestazione-pasto img { width: 3.5rem; height: 3.5rem; border-radius: .5rem; object-fit: cover; }
+.intestazione-pasto img { width: 3.6rem; height: 3.6rem; object-fit: cover; border-radius: .5rem; }
 .intestazione-pasto h2 { margin: .25rem 0 0; font-size: 1.35rem; overflow-wrap: anywhere; }
-.intestazione-pasto time, .valori-pasto dt { color: #495e57; font-size: .9rem; }
+.intestazione-pasto time, .valori-pasto dt, .parametri-pasto { color: var(--secondario); font-size: .9rem; }
 .valori-pasto {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(7rem, 100%), 1fr));
-  gap: .75rem 1.2rem; padding: .95rem 0; border-block: 1px solid #dce5df;
+  gap: .75rem 1.2rem; margin: .9rem 0 .5rem; padding: .9rem 0; border-block: 1px solid var(--bordo-tenue);
 }
 .valori-pasto dd { margin: .25rem 0 0; font-weight: 650; font-variant-numeric: tabular-nums; }
-.stima-pasto { color: #165849; }
+.stima-pasto { color: var(--ok); }
 .stima-pasto strong { font-size: 1.25rem; }
-.scheda-pasto summary { cursor: pointer; width: fit-content; color: #19584d; text-underline-offset: .2em; }
-.scheda-pasto summary:hover { text-decoration: underline; }
-.ingredienti:empty { display: none; }
-.ingredienti { padding-left: 1.2rem; margin-bottom: 0; }
-.ingredienti li + li { margin-top: .45rem; }
-.riprova-dettaglio { margin-top: .5rem; }
+.parametri-pasto { margin: 0 0 .8rem; }
+#archivio-h2 { margin-top: 1.5rem; }
+#archivio-h2 > button { margin-top: .2rem; }
+#stato-h2:not(:empty) { margin: .8rem 0 0; }
+.contenitore-tabella { overflow-x: auto; }
+#tabella-h2 { width: 100%; min-width: 38rem; margin-top: .8rem; border-collapse: collapse; font-size: .9rem; }
+#tabella-h2 th, #tabella-h2 td { padding: .55rem .4rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--bordo-tenue); }
+#tabella-h2 small { display: block; margin-top: .2rem; overflow-wrap: anywhere; }
+#tabella-h2 code { overflow-wrap: anywhere; }
+#tabella-h2 .estratto { color: #6b4f9a; }
+#tabella-h2 button { padding: .4rem .6rem; white-space: nowrap; }
+#esito-prova { margin-top: 1rem; padding: 1rem 1.1rem; border-radius: .6rem; border: 1px solid var(--bordo); overflow-wrap: anywhere; }
+#esito-prova[data-stato="errore"] { background: #fbefec; border-color: #e3b5aa; }
+#esito-prova[data-stato="ok"] { background: #eef5f1; border-color: #b9d3c7; color: inherit; }
+#esito-prova h3 { margin: 0 0 .4rem; font-size: 1rem; }
+#esito-prova pre { max-height: 18rem; overflow: auto; white-space: pre-wrap; font-size: .8rem; }
+#esito-prova img { max-width: 12rem; border-radius: .4rem; }
+#dettaglio-pasto { width: min(44rem, calc(100% - 2rem)); max-height: calc(100vh - 2rem); padding: clamp(1rem, 3vw, 1.6rem); border: 0; border-radius: .8rem; }
+#dettaglio-pasto::backdrop { background: rgb(15 47 42 / .55); }
+.testata-dettaglio { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.testata-dettaglio h2 { font: 500 1.7rem/1.1 Georgia, serif; overflow-wrap: anywhere; }
+.foto-dettaglio { display: block; width: 100%; max-height: 20rem; object-fit: cover; margin: .6rem 0; border-radius: .6rem; }
+.foto-dettaglio[hidden] { display: none; }
+.quando, .record-dettaglio { color: var(--secondario); overflow-wrap: anywhere; }
+.bolo-dettaglio { padding: .8rem 1rem; background: #eef5f1; border-radius: .6rem; }
+.bolo-dettaglio:empty { display: none; }
+.bolo-dettaglio p { margin: .25rem 0; overflow-wrap: anywhere; }
+.bolo-dettaglio .formula { font-family: Consolas, "Cascadia Mono", monospace; font-size: .88rem; }
+.bolo-dettaglio .totale { color: var(--ok); font-size: 1.2rem; font-weight: 700; }
+.bolo-dettaglio .avviso { color: var(--avviso); }
+.ingredienti-dettaglio { padding-left: 1.2rem; }
+.ingredienti-dettaglio li + li { margin-top: .35rem; }

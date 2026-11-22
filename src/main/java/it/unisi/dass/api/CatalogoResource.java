@@ -1,6 +1,6 @@
 package it.unisi.dass.api;
 
-import it.unisi.dass.persistenza.ArchivioBozze;
+import it.unisi.dass.persistenza.ArchivioCatalogo;
 import jakarta.ejb.EJB;
 import jakarta.json.JsonArray;
 import jakarta.ws.rs.*;
@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 @Path("/catalogo")
 @Produces(MediaType.APPLICATION_JSON)
 public class CatalogoResource {
-    @EJB private ArchivioBozze archivio;
+    @EJB private ArchivioCatalogo archivio;
 
     /** Elenca le schede alimentari, applicando il filtro facoltativo passato come parametro q. */
     @GET

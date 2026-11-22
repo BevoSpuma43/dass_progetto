@@ -4,41 +4,81 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DASS · Home</title>
-  <link rel="stylesheet" href="css/stato.css">
+  <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/home.css">
-  <script src="js/stato.js" defer></script>
+  <script type="module" src="js/home.js"></script>
 </head>
 <body>
-  <header><span class="mark" aria-hidden="true">D</span> DASS <span class="pagina">Home</span></header>
-  <main>
-    <h1>Diario alimentare</h1>
-    <p id="bozza-rimossa" role="status" hidden>Bozza rimossa.</p>
-    <nav aria-label="Pagine e risorse del diario">
+  <header class="testata">
+    <a class="marchio" href="./"><span class="mark" aria-hidden="true">D</span> DASS</a>
+    <nav aria-label="Pagine del diario">
+      <a href="./" aria-current="page">Home</a>
+      <a href="analisi.html">Analizza un piatto</a>
+      <a href="storico.html">Storico</a>
+    </nav>
+    <label class="scelta-profilo">Profilo <select id="profilo"></select></label>
+  </header>
+  <div class="impaginazione">
+    <main>
+      <h1>Diario alimentare</h1>
+      <p id="bozza-rimossa" role="status" data-stato="ok" hidden>Bozza rimossa.</p>
       <div class="piatto">
         <div class="intro">
           <h2>Analizza un piatto</h2>
-          <p>Carica una foto, controlla gli ingredienti proposti da Claude e correggi le quantità.</p>
+          <p>Carica una foto, controlla gli ingredienti proposti da Claude e calcola carboidrati e bolo.</p>
           <div class="azioni">
-            <a class="apri" href="haiku.html">Apri l'analisi <span aria-hidden="true">→</span></a>
-            <a class="apri apri-storico" href="storico.html">Storico inserimenti</a>
+            <a class="apri" href="analisi.html">Apri l'analisi <span aria-hidden="true">→</span></a>
+            <a class="apri apri-storico" href="storico.html">Storico dei pasti</a>
           </div>
-          <a id="ultima-bozza" hidden>Riprendi l’ultima bozza</a>
         </div>
-        <img src="img/piatto-demo.jpg" width="420" height="420" alt="Fusilli al pomodoro, uno dei piatti della demo">
+        <img src="img/piatto-demo.jpg" width="420" height="420" alt="Un piatto di fusilli al pomodoro">
       </div>
-      <div class="risorse">
-        <a href="api/catalogo"><strong>Catalogo alimenti</strong><span>Alimenti e valori per 100 g · JSON</span></a>
+
+      <section id="parametri" aria-labelledby="titolo-parametri">
+        <h2 id="titolo-parametri">Parametri per il bolo di <span class="nome-profilo"></span></h2>
+        <p>Usati dalla formula <code>bolo = carboidrati / ICR + (glicemia attuale − glicemia obiettivo) / ISF</code>.</p>
+        <form id="form-parametri" novalidate>
+          <div class="campi">
+            <label>ICR <small>grammi di carboidrati coperti da 1 unità</small>
+              <input name="icr" type="number" inputmode="decimal" min="1" max="150" step="0.1" placeholder="es. 10" required>
+            </label>
+            <label>ISF <small>mg/dL di glicemia abbassati da 1 unità</small>
+              <input name="isf" type="number" inputmode="decimal" min="5" max="500" step="1" placeholder="es. 40" required>
+            </label>
+            <label>Glicemia obiettivo <small>mg/dL, valore predefinito per i nuovi piatti</small>
+              <input name="glicemiaObiettivo" type="number" inputmode="numeric" min="70" max="250" step="1" value="120" required>
+            </label>
+          </div>
+          <div class="azioni">
+            <button type="submit">Salva parametri</button>
+            <p id="stato-parametri" class="stato" role="status"></p>
+          </div>
+        </form>
+        <small>I parametri sono cifrati in questo browser con la chiave del diario del profilo: Payara riceve e conserva solo il testo cifrato.</small>
+      </section>
+
+      <section id="bozze" aria-labelledby="titolo-bozze">
+        <h2 id="titolo-bozze">Bozze da completare</h2>
+        <p id="stato-bozze" class="stato" role="status"></p>
+        <ul id="elenco-bozze"></ul>
+      </section>
+
+      <nav class="risorse" aria-label="Risorse tecniche">
+        <a href="api/catalogo"><strong>Catalogo alimenti</strong><span>Valori per 100 g · JSON pubblico</span></a>
         <a href="swagger.html"><strong>Swagger UI</strong><span>Documentazione interattiva delle API REST</span></a>
-      </div>
-    </nav>
-    <section aria-labelledby="titolo-stato">
-      <h2 id="titolo-stato">Connessione al backend</h2>
-      <p id="esito" role="status" aria-live="polite">In attesa della verifica.</p>
-      <div class="azioni">
-        <button id="verifica" type="button">Verifica connessione</button>
-        <a href="api/stato">Stato del servizio (JSON)</a>
-      </div>
-    </section>
-  </main>
+        <a href="api/stato"><strong>Stato del servizio</strong><span id="esito-servizio">Verifica in corso…</span></a>
+      </nav>
+    </main>
+    <aside id="pannello-scambi" aria-labelledby="titolo-scambi">
+      <h2 id="titolo-scambi">Scambio di chiavi</h2>
+      <dl class="riepilogo-pannello">
+        <dt>Profilo attivo</dt><dd class="profilo-pannello"></dd>
+        <dt>Chiave del diario</dt><dd class="chiave-diario"></dd>
+      </dl>
+      <p class="spiegazione">Ogni azione che legge o scrive H2 apre un nuovo scambio ECDH. La chiave del canale cifra richieste e risposte; la chiave del diario, separata, cifra i documenti e non lascia mai il browser.</p>
+      <p class="nessuno-scambio">Nessuno scambio in questa pagina.</p>
+      <ol class="tracce"></ol>
+    </aside>
+  </div>
 </body>
 </html>

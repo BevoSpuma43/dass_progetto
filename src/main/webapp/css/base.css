@@ -1,0 +1,87 @@
+:root {
+  color-scheme: light;
+  --testo: #192e2c;
+  --sfondo: #f3f6f2;
+  --carta: #fff;
+  --bordo: #c7d4cc;
+  --bordo-tenue: #dce5df;
+  --campo: #919f98;
+  --verde: #19584d;
+  --verde-marchio: #18574e;
+  --secondario: #495e57;
+  --errore: #963825;
+  --ok: #165849;
+  --avviso: #7a5a0d;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color: var(--testo);
+  background: var(--sfondo);
+}
+* { box-sizing: border-box; }
+body { margin: 0 auto; width: min(84rem, 100%); padding: 0 clamp(1rem, 4vw, 3rem); }
+
+/* Intestazione comune: pagine e scelta del profilo. */
+.testata { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.6rem; padding: 1.2rem 0; border-bottom: 1px solid var(--bordo); }
+.marchio { display: inline-flex; align-items: center; gap: .6rem; color: inherit; font-weight: 700; letter-spacing: .09em; text-decoration: none; }
+.mark { background: var(--verde-marchio); color: white; padding: .4rem .65rem; border-radius: .45rem; }
+.testata nav { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; }
+.testata nav a { padding: .3rem 0; font-weight: 600; text-decoration: none; }
+.testata nav a:hover, .testata nav a[aria-current="page"] { text-decoration: underline; text-decoration-thickness: 2px; }
+.scelta-profilo { display: inline-flex; align-items: center; gap: .5rem; margin-left: auto; font-weight: 650; }
+.scelta-profilo select { padding: .45rem .6rem; border: 1px solid var(--campo); border-radius: .4rem; background: white; color: inherit; font: inherit; }
+
+/* Contenuto e pannello «Scambio di chiavi». */
+.impaginazione { display: grid; gap: 1.5rem 2.2rem; margin: clamp(1.5rem, 4vw, 3rem) 0; }
+main { min-width: 0; }
+@media (min-width: 72rem) {
+  .impaginazione { grid-template-columns: minmax(0, 1fr) 24rem; align-items: start; }
+  #pannello-scambi { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; }
+}
+h1 { margin: 0 0 1.2rem; font: 500 clamp(2.4rem, 6vw, 4.2rem)/1.03 Georgia, serif; letter-spacing: -.04em; }
+h2 { margin: 0 0 .6rem; font-size: 1.15rem; }
+section { background: var(--carta); padding: clamp(1.1rem, 3vw, 2rem); border: 1px solid var(--bordo); border-radius: .75rem; }
+main > * + * { margin-top: 1rem; }
+p { line-height: 1.5; }
+small { color: var(--secondario); }
+code { font-family: Consolas, "Cascadia Mono", monospace; font-size: .92em; overflow-wrap: anywhere; }
+a { color: var(--verde); text-underline-offset: .23em; }
+:focus-visible { outline: 3px solid #967014; outline-offset: 3px; }
+
+.azioni { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.2rem; }
+button { padding: .7rem 1rem; border: 0; border-radius: .4rem; background: var(--verde); color: white; cursor: pointer; font: inherit; font-weight: 600; }
+button.secondario { background: white; color: var(--verde); border: 1px solid #9fb5ac; }
+button.pericolo { background: white; color: var(--errore); border: 1px solid #c68d82; }
+button:disabled { opacity: .6; cursor: default; }
+
+.campi { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .9rem; margin: .6rem 0 1rem; }
+.campi label { display: grid; align-content: start; gap: .3rem; font-weight: 650; }
+.campi small { font-weight: normal; }
+.campi input, .campi select {
+  width: 100%; min-width: 0; padding: .55rem; border: 1px solid var(--campo); border-radius: .4rem;
+  background: white; color: inherit; font: inherit;
+}
+.stato:empty { display: none; }
+[data-stato="errore"] { color: var(--errore); }
+[data-stato="ok"] { color: var(--ok); }
+[data-stato="attesa"] { color: var(--secondario); }
+
+#pannello-scambi { padding: 1.1rem 1.1rem 1.3rem; background: #0f2f2a; color: #e6f0ec; border-radius: .75rem; font-size: .88rem; }
+#pannello-scambi h2 { color: white; font-size: 1.05rem; }
+#pannello-scambi .spiegazione { margin: .5rem 0; color: #c5d9d2; }
+.riepilogo-pannello { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .25rem .7rem; margin: .6rem 0; }
+.riepilogo-pannello dt, .tracce dt { color: #9fc2b7; }
+.riepilogo-pannello dd { margin: 0; overflow-wrap: anywhere; }
+.nessuno-scambio { color: #9fc2b7; font-style: italic; }
+.tracce { display: grid; gap: .6rem; margin: .8rem 0 0; padding: 0; list-style: none; }
+.tracce details { padding: .55rem .7rem; background: #16403a; border-left: 4px solid #6fb39f; border-radius: .5rem; }
+.tracce details[data-esito="in corso"] { border-left-color: #e3c06b; }
+.tracce details[data-esito="errore"] { border-left-color: #e08a74; }
+.tracce details[data-esito="annullata"] { border-left-color: #9aa5a1; }
+.tracce summary { cursor: pointer; overflow-wrap: anywhere; }
+.tracce dl { display: grid; grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr); gap: .25rem .6rem; margin: .55rem 0; }
+.tracce dd { margin: 0; font: .8rem/1.35 Consolas, "Cascadia Mono", monospace; overflow-wrap: anywhere; }
+.messaggi { display: grid; gap: .35rem; margin: .4rem 0; padding-left: 1.1rem; }
+.messaggi li { overflow-wrap: anywhere; }
+.messaggi .verso { display: block; font-size: .76rem; font-weight: 700; letter-spacing: .02em; }
+.messaggi .uscita .verso { color: #f0c987; }
+.messaggi .entrata .verso { color: #8fd3bd; }
+.esito-traccia { margin: .4rem 0 0; font-weight: 650; overflow-wrap: anywhere; }

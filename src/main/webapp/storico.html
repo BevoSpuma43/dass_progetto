@@ -3,25 +3,75 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>DASS · Storico inserimenti</title>
-  <link rel="stylesheet" href="css/stato.css">
+  <title>DASS · Storico dei pasti</title>
+  <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/storico.css">
-  <script src="js/storico.js" defer></script>
+  <script type="module" src="js/storico.js"></script>
 </head>
 <body>
-  <header><span class="mark" aria-hidden="true">D</span> DASS <a href="./">Home</a></header>
-  <main>
-    <h1>Storico inserimenti</h1>
-    <p class="nota-storico">Valori salvati per i pasti registrati. L’insulina è simulata a scopo didattico su un profilo sintetico.</p>
-    <p id="stato-storico" role="status">Caricamento dello storico.</p>
-    <button type="button" id="riprova-storico" hidden>Riprova</button>
-    <ol id="pasti" aria-label="Pasti dal più recente"></ol>
-  </main>
+  <header class="testata">
+    <a class="marchio" href="./"><span class="mark" aria-hidden="true">D</span> DASS</a>
+    <nav aria-label="Pagine del diario">
+      <a href="./">Home</a>
+      <a href="analisi.html">Analizza un piatto</a>
+      <a href="storico.html" aria-current="page">Storico</a>
+    </nav>
+    <label class="scelta-profilo">Profilo <select id="profilo"></select></label>
+  </header>
+  <div class="impaginazione">
+    <main>
+      <h1>Storico dei pasti</h1>
+      <p class="nota-storico">I pasti di <strong class="nome-profilo"></strong> arrivano cifrati da Payara e vengono decifrati in questo browser con la chiave del diario.</p>
+      <p id="stato-storico" class="stato" role="status"></p>
+      <button type="button" id="riprova-storico" class="secondario" hidden>Riprova</button>
+      <ol id="pasti" aria-label="Pasti dal più recente"></ol>
+
+      <section id="archivio-h2" aria-labelledby="titolo-h2">
+        <h2 id="titolo-h2">Archivio H2: cosa conserva il server</h2>
+        <p>La tabella <code>DOCUMENTO_CIFRATO</code> contiene i documenti di tutti i profili: per ognuno solo profilo, id, tipo, revisione, data, IV e testo cifrato. Puoi provare ad aprire un record con la chiave del diario del profilo attivo.</p>
+        <button type="button" id="mostra-h2">Mostra i record di H2</button>
+        <p id="stato-h2" class="stato" role="status"></p>
+        <div class="contenitore-tabella">
+          <table id="tabella-h2" hidden>
+            <thead><tr><th scope="col">Profilo</th><th scope="col">Documento</th><th scope="col">Testo cifrato</th><th scope="col"><span class="solo-lettori">Prova</span></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="esito-prova" role="status" aria-live="polite" hidden></div>
+      </section>
+    </main>
+    <aside id="pannello-scambi" aria-labelledby="titolo-scambi">
+      <h2 id="titolo-scambi">Scambio di chiavi</h2>
+      <dl class="riepilogo-pannello">
+        <dt>Profilo attivo</dt><dd class="profilo-pannello"></dd>
+        <dt>Chiave del diario</dt><dd class="chiave-diario"></dd>
+      </dl>
+      <p class="spiegazione">Ogni azione che legge o scrive H2 apre un nuovo scambio ECDH. La chiave del canale cifra richieste e risposte; la chiave del diario, separata, cifra i documenti e non lascia mai il browser.</p>
+      <p class="nessuno-scambio">Nessuno scambio in questa pagina.</p>
+      <ol class="tracce"></ol>
+    </aside>
+  </div>
+
+  <dialog id="dettaglio-pasto" aria-labelledby="titolo-dettaglio">
+    <div class="testata-dettaglio">
+      <h2 id="titolo-dettaglio"></h2>
+      <button type="button" class="chiudi secondario">Chiudi</button>
+    </div>
+    <p class="stato-dettaglio stato" role="status"></p>
+    <img class="foto-dettaglio" alt="" hidden>
+    <p class="quando"></p>
+    <dl class="valori-pasto"></dl>
+    <div class="bolo-dettaglio"></div>
+    <h3>Ingredienti</h3>
+    <ul class="ingredienti-dettaglio"></ul>
+    <p class="record-dettaglio"></p>
+  </dialog>
+
   <template id="scheda-pasto">
     <li>
       <article class="scheda-pasto">
         <div class="intestazione-pasto">
-          <img alt="" width="120" height="120" loading="lazy">
+          <img alt="" width="120" height="120">
           <div>
             <time></time>
             <h2></h2>
@@ -32,14 +82,13 @@
           <div><dt>Proteine</dt><dd data-valore="proteineG" data-unita="g"></dd></div>
           <div><dt>Grassi</dt><dd data-valore="grassiG" data-unita="g"></dd></div>
           <div><dt>Energia</dt><dd data-valore="kcal" data-unita="kcal"></dd></div>
-          <div class="stima-pasto"><dt>Insulina simulata</dt><dd><strong></strong></dd></div>
+          <div class="stima-pasto"><dt>Bolo calcolato</dt><dd><strong></strong></dd></div>
         </dl>
-        <details>
-          <summary>Ingredienti e quantità</summary>
-          <p class="stato-dettaglio" role="status" hidden></p>
-          <button type="button" class="riprova-dettaglio" hidden>Riprova</button>
-          <ul class="ingredienti"></ul>
-        </details>
+        <p class="parametri-pasto"></p>
+        <div class="azioni">
+          <button type="button" class="apri-pasto">Apri il pasto</button>
+          <button type="button" class="verifica-h2 secondario">Vedi il record in H2</button>
+        </div>
       </article>
     </li>
   </template>

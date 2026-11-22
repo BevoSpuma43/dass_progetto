@@ -30,7 +30,7 @@ Write-Host 'H2 incluso in Payara Micro.'
 
 Push-Location -LiteralPath $PSScriptRoot
 try {
-    & mvn.cmd --batch-mode --no-transfer-progress verify
+    & mvn.cmd --batch-mode --no-transfer-progress clean verify
     if ($LASTEXITCODE -ne 0) {
         throw "Compilazione Maven fallita (codice $LASTEXITCODE). Controllare il messaggio precedente."
     }

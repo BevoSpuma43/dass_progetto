@@ -2,22 +2,42 @@
   "openapi": "3.0.3",
   "info": {
     "title": "API REST DASS",
-    "version": "0.1.0",
-    "description": "API del diario alimentare dimostrativo, dall’analisi di una foto alla registrazione e allo storico dei pasti. I valori della simulazione sono didattici."
+    "version": "0.2.0",
+    "description": "Diario alimentare con analisi della foto (Claude Sonnet 5.5), calcolo del bolo nel browser e archivio cifrato. I documenti del diario sono cifrati nel browser con una chiave AES-GCM per profilo, non esportabile; ogni azione che legge o scrive H2 apre uno scambio di chiavi ECDH e usa il canale cifrato che ne deriva. Payara conserva solo testo cifrato e metadati minimi."
   },
-  "servers": [{"url": "/dass", "description": "Applicazione DASS"}],
+  "servers": [
+    {
+      "url": "/dass",
+      "description": "Applicazione DASS"
+    }
+  ],
   "tags": [
-    {"name": "Servizio"},
-    {"name": "Analisi"},
-    {"name": "Bozze"},
-    {"name": "Pasti"},
-    {"name": "Storico"}
+    {
+      "name": "Servizio"
+    },
+    {
+      "name": "Profili"
+    },
+    {
+      "name": "Scambio di chiavi"
+    },
+    {
+      "name": "Diario cifrato"
+    },
+    {
+      "name": "Analisi"
+    },
+    {
+      "name": "Verifica della cifratura"
+    }
   ],
   "paths": {
     "/api/stato": {
       "get": {
         "operationId": "leggiStato",
-        "tags": ["Servizio"],
+        "tags": [
+          "Servizio"
+        ],
         "summary": "Verifica lo stato di DASS",
         "responses": {
           "200": {
@@ -26,8 +46,17 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": ["stato"],
-                  "properties": {"stato": {"type": "string", "enum": ["ok"]}}
+                  "required": [
+                    "stato"
+                  ],
+                  "properties": {
+                    "stato": {
+                      "type": "string",
+                      "enum": [
+                        "ok"
+                      ]
+                    }
+                  }
                 }
               }
             }
@@ -38,35 +67,578 @@
     "/api/catalogo": {
       "get": {
         "operationId": "cercaCatalogo",
-        "tags": ["Servizio"],
-        "summary": "Consulta le schede del catalogo",
+        "tags": [
+          "Servizio"
+        ],
+        "summary": "Consulta le schede del catalogo nutrizionale",
+        "description": "Catalogo pubblico, in chiaro: le schede non sono dati personali.",
         "parameters": [
           {
             "name": "q",
             "in": "query",
             "description": "Filtro facoltativo per parola o preparazione.",
-            "schema": {"type": "string", "example": "farina 0"}
+            "schema": {
+              "type": "string",
+              "example": "farina 0"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "Schede e valori per 100 g.",
             "content": {
-              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/VoceCatalogo"}}}
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VoceCatalogo"
+                  }
+                }
+              }
             }
           }
         }
       }
     },
-    "/api/demo/archivio": {
+    "/api/profili": {
       "get": {
-        "operationId": "riepilogoArchivio",
-        "tags": ["Servizio"],
-        "summary": "Leggi il riepilogo dell’archivio demo",
+        "operationId": "elencaProfili",
+        "tags": [
+          "Profili"
+        ],
+        "summary": "Elenca i profili",
+        "description": "Elenco pubblico: solo identificativi, nomi e numero di documenti cifrati. All'avvio esistono utente1 e utente2, con diario vuoto.",
         "responses": {
           "200": {
-            "description": "Conteggi e identificativi degli episodi.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ArchivioDemo"}}}
+            "description": "Profili disponibili.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Profilo"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/scambi": {
+      "post": {
+        "operationId": "apriScambio",
+        "tags": [
+          "Scambio di chiavi"
+        ],
+        "summary": "Apre lo scambio di chiavi ECDH di un'azione",
+        "description": "Il browser invia la chiave pubblica effimera P-256 (punto non compresso, 65 byte) e riceve quella di Payara con un sale di 32 byte. Entrambi calcolano il segreto ECDH e derivano con HKDF-SHA-256 (info \"DASS-scambio-v1|scambioId|profiloId|azione\") la chiave AES-GCM 256 del canale. Lo scambio vale 5 minuti, per un solo profilo e una sola azione, al massimo 500 richieste.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AperturaScambio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Scambio aperto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Scambio"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Azione o chiave pubblica non valida (SCAMBIO_NON_VALIDO, CHIAVE_PUBBLICA_NON_VALIDA).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo inesistente (PROFILO_ASSENTE).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/profili/{profilo}/documenti": {
+      "get": {
+        "operationId": "elencaDocumenti",
+        "tags": [
+          "Diario cifrato"
+        ],
+        "summary": "Elenca i documenti cifrati di un tipo",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1. Lo scambio deve appartenere al profilo del percorso.",
+        "security": [
+          {
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profilo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "utente1"
+            }
+          },
+          {
+            "name": "tipo",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "impostazioni",
+                "bozza",
+                "foto",
+                "miniatura",
+                "pasto"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Documenti del tipo, dal più recente. Viaggia cifrato: lo schema in chiaro è un array di DocumentoCifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo inesistente (PROFILO_ASSENTE). Cifrato."
+          }
+        }
+      }
+    },
+    "/api/profili/{profilo}/documenti/{id}": {
+      "get": {
+        "operationId": "leggiDocumento",
+        "tags": [
+          "Diario cifrato"
+        ],
+        "summary": "Legge un documento cifrato",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1.",
+        "security": [
+          {
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profilo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "utente1"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "example": "p-934ca026-a0a6-4000-bc91-c7abe5d3548f"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Il documento come è conservato in H2. Viaggia cifrato: lo schema in chiaro è DocumentoCifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Documento inesistente o di un altro profilo (DOCUMENTO_ASSENTE). Cifrato."
+          }
+        }
+      },
+      "put": {
+        "operationId": "salvaDocumento",
+        "tags": [
+          "Diario cifrato"
+        ],
+        "summary": "Crea o sostituisce un documento cifrato",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1. Revisione attesa 0 per creare il documento; altrimenti deve coincidere con quella salvata (REVISIONE_SUPERATA). Gli id sono unici in tutto l'archivio (DOCUMENTO_ESISTENTE).",
+        "security": [
+          {
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profilo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "utente1"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "example": "p-934ca026-a0a6-4000-bc91-c7abe5d3548f"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "BustaCifrata che contiene una ScritturaDocumento.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BustaCifrata"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ricevuta del salvataggio. Viaggia cifrato: lo schema in chiaro è Ricevuta.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Testo cifrato oltre 8 MiB (DOCUMENTO_GRANDE). Cifrato."
+          }
+        }
+      },
+      "delete": {
+        "operationId": "eliminaDocumento",
+        "tags": [
+          "Diario cifrato"
+        ],
+        "summary": "Elimina un documento cifrato",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1.",
+        "security": [
+          {
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profilo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "utente1"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "example": "p-934ca026-a0a6-4000-bc91-c7abe5d3548f"
+            }
+          },
+          {
+            "name": "revisione",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Revisione attesa, facoltativa."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Esito dell'eliminazione. Viaggia cifrato: lo schema in chiaro è Eliminazione.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
           }
         }
       }
@@ -74,676 +646,899 @@
     "/api/analisi-piatto": {
       "post": {
         "operationId": "analizzaPiatto",
-        "tags": ["Analisi"],
-        "summary": "Analizza una foto e crea una bozza",
-        "description": "Invia foto e caption a Haiku per stimare gli ingredienti. In caso di errore esterno, usa la bozza salvata per completare l’inserimento manualmente.",
-        "parameters": [{"$ref": "#/components/parameters/HeaderAnalisi"}],
+        "tags": [
+          "Analisi"
+        ],
+        "summary": "Analizza foto e descrizione con Claude Sonnet 5.5",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1. È l'unico punto in cui Payara riceve dati in chiaro, dentro il canale cifrato e solo con il consenso dell'utente: foto e descrizione vengono inoltrate ad Anthropic e non vengono salvate. La bozza viene salvata dal browser dopo averla cifrata.",
+        "security": [
+          {
+            "scambio": [],
+            "busta": []
+          }
+        ],
         "requestBody": {
           "required": true,
-          "content": {"multipart/form-data": {"schema": {"$ref": "#/components/schemas/CaricamentoFoto"}}}
+          "description": "BustaCifrata che contiene una RichiestaAnalisi.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BustaCifrata"
+              }
+            }
+          }
         },
         "responses": {
           "200": {
-            "description": "Bozza con gli ingredienti proposti.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
+            "description": "Proposta di ingredienti e grammi. Viaggia cifrato: lo schema in chiaro è {proposta: Proposta}.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
           },
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "403": {"$ref": "#/components/responses/OrigineNonValida"},
-          "413": {"$ref": "#/components/responses/FotoGrande"},
-          "415": {"$ref": "#/components/responses/FotoNonValida"},
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
           "429": {
-            "description": "Raggiunto il limite del servizio di analisi. La risposta include la bozza se è già stata salvata.",
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
             "content": {
               "application/json": {
                 "schema": {
-                  "anyOf": [
-                    {"$ref": "#/components/schemas/BozzaConErrore"},
-                    {"$ref": "#/components/schemas/Errore"}
-                  ]
+                  "$ref": "#/components/schemas/Errore"
                 }
               }
             }
           },
-          "502": {
-            "description": "Il servizio di analisi ha restituito un errore o una risposta illeggibile. La risposta include la bozza se è già stata salvata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {"$ref": "#/components/schemas/BozzaConErrore"},
-                    {"$ref": "#/components/schemas/Errore"}
-                  ]
-                }
-              }
-            }
+          "413": {
+            "description": "Foto oltre 5 MiB (UPLOAD_GRANDE). Cifrato."
           },
           "503": {
-            "description": "Servizio temporaneamente indisponibile o chiave Anthropic assente. La risposta include la bozza se è già stata salvata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {"$ref": "#/components/schemas/BozzaConErrore"},
-                    {"$ref": "#/components/schemas/Errore"}
-                  ]
-                }
-              }
-            }
-          },
-          "504": {
-            "description": "Il servizio di analisi ha impiegato troppo tempo a rispondere. La risposta include la bozza se è già stata salvata.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "anyOf": [
-                    {"$ref": "#/components/schemas/BozzaConErrore"},
-                    {"$ref": "#/components/schemas/Errore"}
-                  ]
-                }
-              }
-            }
+            "description": "Claude non disponibile o chiave non configurata (CHIAVE_ASSENTE, FORNITORE_INDISPONIBILE, RETE). Cifrato."
           }
         }
       }
     },
-    "/prove/haiku": {
-      "post": {
-        "operationId": "provaHaiku",
-        "tags": ["Analisi"],
-        "summary": "Prova Haiku senza salvare una bozza",
-        "parameters": [{"$ref": "#/components/parameters/HeaderProva"}],
-        "requestBody": {
-          "required": true,
-          "content": {"multipart/form-data": {"schema": {"$ref": "#/components/schemas/CaricamentoFoto"}}}
-        },
-        "responses": {
-          "200": {
-            "description": "Proposta grezza di Haiku.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PropostaHaiku"}}}
-          },
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "403": {"$ref": "#/components/responses/OrigineNonValida"},
-          "413": {"$ref": "#/components/responses/FotoGrande"},
-          "415": {"$ref": "#/components/responses/FotoNonValida"},
-          "429": {"$ref": "#/components/responses/LimiteAPI"},
-          "502": {"$ref": "#/components/responses/ErroreAnalisi"},
-          "503": {"$ref": "#/components/responses/ServizioIndisponibile"},
-          "504": {"$ref": "#/components/responses/AttesaScaduta"}
-        }
-      }
-    },
-    "/api/bozze/{id}": {
+    "/api/archivio-h2": {
       "get": {
-        "operationId": "leggiBozza",
-        "tags": ["Bozze"],
-        "summary": "Leggi la bozza",
-        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
-        "responses": {
-          "200": {
-            "description": "Foto, ingredienti, revisione e scadenza della bozza.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
-          },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
-        }
-      },
-      "delete": {
-        "operationId": "rimuoviBozza",
-        "tags": ["Bozze"],
-        "summary": "Rimuovi la bozza",
-        "description": "I pasti già registrati con questa bozza restano nello storico.",
-        "parameters": [
-          {"$ref": "#/components/parameters/IdBozza"},
+        "operationId": "vistaArchivio",
+        "tags": [
+          "Verifica della cifratura"
+        ],
+        "summary": "Mostra i record della tabella DOCUMENTO_CIFRATO",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1. Vista dimostrativa: documenti di tutti i profili con metadati, lunghezza ed estratto del testo cifrato. Serve uno scambio valido di qualunque profilo.",
+        "security": [
           {
-            "name": "revisione",
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limite",
             "in": "query",
-            "description": "Revisione attesa. Facoltativa.",
-            "schema": {"type": "integer", "format": "int64", "minimum": 0}
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 30
+            }
           }
         ],
         "responses": {
-          "204": {"description": "Bozza rimossa o già assente."},
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "409": {"$ref": "#/components/responses/Conflitto"}
-        }
-      }
-    },
-    "/api/bozze/{id}/foto": {
-      "get": {
-        "operationId": "leggiFotoBozza",
-        "tags": ["Bozze"],
-        "summary": "Leggi la foto della bozza",
-        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
-        "responses": {
           "200": {
-            "description": "Immagine JPEG.",
-            "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}
-          },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
-        }
-      }
-    },
-    "/api/bozze/{id}/ingredienti": {
-      "put": {
-        "operationId": "aggiornaIngredienti",
-        "tags": ["Bozze"],
-        "summary": "Aggiorna gli ingredienti della bozza",
-        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
-        "requestBody": {
-          "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CorrezioneBozza"}}}
-        },
-        "responses": {
-          "200": {
-            "description": "Bozza aggiornata.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Bozza"}}}
-          },
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "404": {"$ref": "#/components/responses/RisorsaAssente"},
-          "409": {"$ref": "#/components/responses/Conflitto"}
-        }
-      }
-    },
-    "/api/bozze/{id}/anteprima": {
-      "post": {
-        "operationId": "calcolaAnteprima",
-        "tags": ["Bozze"],
-        "summary": "Calcola i macro e la simulazione di una bozza",
-        "parameters": [{"$ref": "#/components/parameters/IdBozza"}],
-        "requestBody": {
-          "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CalcoloBozza"}}}
-        },
-        "responses": {
-          "200": {
-            "description": "Anteprima completa o elenco dei dati mancanti.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Anteprima"}}}
-          },
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "404": {"$ref": "#/components/responses/RisorsaAssente"},
-          "409": {"$ref": "#/components/responses/Conflitto"}
-        }
-      }
-    },
-    "/api/pasti": {
-      "post": {
-        "operationId": "registraPasto",
-        "tags": ["Pasti"],
-        "summary": "Registra un pasto nel diario",
-        "requestBody": {
-          "required": true,
-          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ConfermaPasto"}}}
-        },
-        "responses": {
-          "201": {
-            "description": "Pasto registrato, oppure conferma ripetuta con la stessa chiave.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/PastoRegistrato"}}},
+            "description": "Record più recenti. Viaggia cifrato: lo schema in chiaro è VistaH2.",
             "headers": {
-              "Location": {
-                "description": "URL del dettaglio del pasto.",
-                "schema": {"type": "string", "format": "uri"}
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
               }
             }
           },
-          "400": {"$ref": "#/components/responses/RichiestaNonValida"},
-          "404": {"$ref": "#/components/responses/RisorsaAssente"},
-          "409": {"$ref": "#/components/responses/Conflitto"},
-          "503": {"$ref": "#/components/responses/ServizioIndisponibile"}
-        }
-      }
-    },
-    "/api/pasti/{id}": {
-      "get": {
-        "operationId": "leggiPasto",
-        "tags": ["Pasti"],
-        "summary": "Leggi ingredienti, totali e simulazione del pasto",
-        "parameters": [{"$ref": "#/components/parameters/IdPasto"}],
-        "responses": {
-          "200": {
-            "description": "Dettaglio del pasto registrato.",
-            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/DettaglioPasto"}}}
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
           },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          }
         }
       }
     },
-    "/api/pasti/{id}/foto": {
+    "/api/archivio-h2/{profilo}/{id}": {
       "get": {
-        "operationId": "leggiFotoPasto",
-        "tags": ["Pasti"],
-        "summary": "Leggi la foto o la miniatura del pasto",
-        "parameters": [
-          {"$ref": "#/components/parameters/IdPasto"},
+        "operationId": "leggiRecordH2",
+        "tags": [
+          "Verifica della cifratura"
+        ],
+        "summary": "Legge un record di H2 completo",
+        "description": "Richiesta nel canale cifrato: servono le intestazioni X-DASS-Scambio e X-DASS-Busta. Il corpo, se presente, è una BustaCifrata; la risposta della risorsa arriva cifrata come BustaCifrata con l'intestazione X-DASS-Cifrato: 1. Gli errori del canale (401, 403, 409, 429 e 400 sulla busta) arrivano in chiaro. Swagger UI non può cifrare le buste: usa il browser o scripts/Verifica-Servizio.ps1. Restituisce il testo cifrato completo di un documento di qualunque profilo, per provare a decifrarlo con la chiave del profilo attivo.",
+        "security": [
           {
-            "name": "miniatura",
-            "in": "query",
-            "description": "Richiedi la miniatura.",
-            "schema": {"type": "boolean", "default": false}
+            "scambio": [],
+            "busta": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "profilo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "utente1"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "example": "p-934ca026-a0a6-4000-bc91-c7abe5d3548f"
+            }
           }
         ],
         "responses": {
           "200": {
-            "description": "Immagine JPEG.",
-            "content": {"image/jpeg": {"schema": {"type": "string", "format": "binary"}}}
-          },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
-        }
-      }
-    },
-    "/api/piatti/{id}/pasti": {
-      "get": {
-        "operationId": "elencaPastiPiatto",
-        "tags": ["Storico"],
-        "summary": "Elenca i pasti associati a un piatto",
-        "parameters": [{"$ref": "#/components/parameters/IdPiatto"}],
-        "responses": {
-          "200": {
-            "description": "Episodi dal più recente.",
+            "description": "Il record con il profilo proprietario. Viaggia cifrato: lo schema in chiaro è DocumentoGrezzo.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
-                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/RiepilogoPasto"}}
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
               }
             }
           },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
-        }
-      }
-    },
-    "/api/pazienti/{id}/piatti": {
-      "get": {
-        "operationId": "elencaPiattiPaziente",
-        "tags": ["Storico"],
-        "summary": "Elenca i piatti del profilo",
-        "parameters": [{"$ref": "#/components/parameters/IdPaziente"}],
-        "responses": {
-          "200": {
-            "description": "Piatti con l’ultimo episodio salvato.",
+          "400": {
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
             "content": {
-              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Piatto"}}}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
             }
           },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
-        }
-      }
-    },
-    "/api/pazienti/{id}/pasti": {
-      "get": {
-        "operationId": "elencaPastiPaziente",
-        "tags": ["Storico"],
-        "summary": "Leggi lo storico degli inserimenti",
-        "parameters": [{"$ref": "#/components/parameters/IdPaziente"}],
-        "responses": {
-          "200": {
-            "description": "Pasti dal più recente con i macro e la simulazione salvati.",
+          "401": {
+            "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
             "content": {
-              "application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/PastoStorico"}}}
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
             }
           },
-          "404": {"$ref": "#/components/responses/RisorsaAssente"}
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          }
         }
       }
     }
   },
   "components": {
-    "parameters": {
-      "IdBozza": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {"type": "string", "format": "uuid"}
-      },
-      "IdPasto": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {"type": "string", "example": "pasta-01"}
-      },
-      "IdPiatto": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {"type": "string", "example": "piatto-pasta"}
-      },
-      "IdPaziente": {
-        "name": "id",
-        "in": "path",
-        "required": true,
-        "schema": {"type": "string", "example": "paz-demo"}
-      },
-      "HeaderAnalisi": {
-        "name": "X-DASS-Analisi",
+    "securitySchemes": {
+      "scambio": {
+        "type": "apiKey",
         "in": "header",
-        "required": true,
-        "schema": {"type": "string", "enum": ["1"], "default": "1"}
+        "name": "X-DASS-Scambio",
+        "description": "Identificativo dello scambio di chiavi dell'azione."
       },
-      "HeaderProva": {
-        "name": "X-DASS-Prova",
+      "busta": {
+        "type": "apiKey",
         "in": "header",
-        "required": true,
-        "schema": {"type": "string", "enum": ["1"], "default": "1"}
-      }
-    },
-    "responses": {
-      "RichiestaNonValida": {
-        "description": "Parametri o corpo della richiesta non validi.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "OrigineNonValida": {
-        "description": "Manca l’header obbligatorio o il suo valore è diverso da 1.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "RisorsaAssente": {
-        "description": "Risorsa inesistente o bozza scaduta.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "Conflitto": {
-        "description": "Revisione superata o conflitto durante la registrazione.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "FotoGrande": {
-        "description": "Foto troppo grande per dimensione o risoluzione.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "FotoNonValida": {
-        "description": "Formato della richiesta o immagine non supportati.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "LimiteAPI": {
-        "description": "Raggiunto il limite del servizio di analisi.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "ErroreAnalisi": {
-        "description": "Il servizio di analisi ha restituito un errore o una risposta illeggibile.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "ServizioIndisponibile": {
-        "description": "Servizio temporaneamente indisponibile o chiave Anthropic assente.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
-      },
-      "AttesaScaduta": {
-        "description": "Il servizio di analisi ha impiegato troppo tempo a rispondere.",
-        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Errore"}}}
+        "name": "X-DASS-Busta",
+        "description": "base64url(iv).base64url(testo cifrato) di un DescrittoreBusta."
       }
     },
     "schemas": {
       "Errore": {
         "type": "object",
-        "required": ["codice", "messaggio"],
-        "properties": {"codice": {"type": "string"}, "messaggio": {"type": "string"}}
+        "required": [
+          "codice",
+          "messaggio"
+        ],
+        "properties": {
+          "codice": {
+            "type": "string",
+            "example": "SCAMBIO_SCADUTO"
+          },
+          "messaggio": {
+            "type": "string"
+          }
+        }
       },
       "Macronutrienti": {
         "type": "object",
-        "required": ["carboidratiG", "proteineG", "grassiG", "kcal"],
+        "required": [
+          "carboidratiG",
+          "proteineG",
+          "grassiG",
+          "kcal"
+        ],
         "properties": {
-          "carboidratiG": {"type": "number"},
-          "proteineG": {"type": "number"},
-          "grassiG": {"type": "number"},
-          "kcal": {"type": "number"}
+          "carboidratiG": {
+            "type": "number"
+          },
+          "proteineG": {
+            "type": "number"
+          },
+          "grassiG": {
+            "type": "number"
+          },
+          "kcal": {
+            "type": "number"
+          }
         }
       },
       "VoceCatalogo": {
         "type": "object",
         "properties": {
-          "id": {"type": "string", "example": "pasta-cotta-v1"},
-          "nome": {"type": "string", "example": "Pasta di semola"},
-          "preparazione": {"type": "string", "enum": ["crudo", "cotto", "non_noto"]},
-          "unita": {"type": "string", "example": "g"},
-          "versione": {"type": "string"},
-          "fonte": {"type": "string"},
-          "indiceGlicemico": {"type": "string"},
-          "per100g": {"$ref": "#/components/schemas/Macronutrienti"}
+          "id": {
+            "type": "string",
+            "example": "pasta-cotta-v1"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Pasta di semola"
+          },
+          "preparazione": {
+            "type": "string",
+            "enum": [
+              "crudo",
+              "cotto",
+              "non_noto"
+            ]
+          },
+          "unita": {
+            "type": "string",
+            "example": "g"
+          },
+          "versione": {
+            "type": "string"
+          },
+          "fonte": {
+            "type": "string"
+          },
+          "indiceGlicemico": {
+            "type": "string"
+          },
+          "per100g": {
+            "$ref": "#/components/schemas/Macronutrienti"
+          }
         }
       },
-      "CaricamentoFoto": {
+      "Profilo": {
         "type": "object",
-        "required": ["foto"],
+        "required": [
+          "id",
+          "nome",
+          "documenti"
+        ],
         "properties": {
+          "id": {
+            "type": "string",
+            "example": "utente1"
+          },
+          "nome": {
+            "type": "string",
+            "example": "Utente 1"
+          },
+          "documenti": {
+            "type": "integer",
+            "description": "Numero di documenti cifrati del profilo."
+          }
+        }
+      },
+      "AperturaScambio": {
+        "type": "object",
+        "required": [
+          "profiloId",
+          "azione",
+          "chiavePubblica"
+        ],
+        "properties": {
+          "profiloId": {
+            "type": "string",
+            "example": "utente1"
+          },
+          "azione": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,39}$",
+            "example": "apertura-storico",
+            "description": "Nome dell'azione del diario: entra nella derivazione della chiave."
+          },
+          "chiavePubblica": {
+            "type": "string",
+            "format": "byte",
+            "description": "Chiave pubblica ECDH P-256 del browser, punto non compresso di 65 byte."
+          }
+        }
+      },
+      "Scambio": {
+        "type": "object",
+        "required": [
+          "scambioId",
+          "chiavePubblica",
+          "sale",
+          "scadeAlle",
+          "algoritmo",
+          "improntaBrowser",
+          "improntaServer"
+        ],
+        "properties": {
+          "scambioId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "chiavePubblica": {
+            "type": "string",
+            "format": "byte",
+            "description": "Chiave pubblica effimera di Payara, 65 byte."
+          },
+          "sale": {
+            "type": "string",
+            "format": "byte",
+            "description": "Sale HKDF di 32 byte."
+          },
+          "scadeAlle": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "algoritmo": {
+            "type": "string",
+            "example": "ECDH P-256 · HKDF-SHA-256 · AES-GCM 256"
+          },
+          "improntaBrowser": {
+            "type": "string",
+            "example": "81b0 3b11 a2d5 8261",
+            "description": "Primi 64 bit dello SHA-256 della chiave pubblica ricevuta dal browser."
+          },
+          "improntaServer": {
+            "type": "string",
+            "example": "2fd0 4e4e 66f5 9756"
+          }
+        }
+      },
+      "DescrittoreBusta": {
+        "type": "object",
+        "description": "Contenuto in chiaro di X-DASS-Busta, cifrato con AAD \"DASS|richiesta|scambioId\".",
+        "required": [
+          "metodo",
+          "percorso",
+          "nonce",
+          "istante"
+        ],
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "example": "GET"
+          },
+          "percorso": {
+            "type": "string",
+            "example": "/dass/api/profili/utente1/documenti?tipo=pasto"
+          },
+          "nonce": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "istante": {
+            "type": "integer",
+            "description": "Millisecondi dall'epoca Unix; tolleranza di 2 minuti."
+          }
+        }
+      },
+      "BustaCifrata": {
+        "type": "object",
+        "required": [
+          "iv",
+          "dati"
+        ],
+        "description": "AES-GCM con la chiave dello scambio. AAD del corpo: \"DASS|corpo|scambioId|nonce\"; della risposta: \"DASS|risposta|scambioId|nonce\".",
+        "properties": {
+          "iv": {
+            "type": "string",
+            "format": "byte",
+            "description": "IV di 12 byte."
+          },
+          "dati": {
+            "type": "string",
+            "format": "byte",
+            "description": "Testo cifrato con tag di 16 byte."
+          }
+        }
+      },
+      "ScritturaDocumento": {
+        "type": "object",
+        "required": [
+          "tipo",
+          "revisione",
+          "iv",
+          "dati"
+        ],
+        "description": "Documento cifrato nel browser con la chiave del diario. AAD: \"DASS|diario|v1|profilo|tipo|id\".",
+        "properties": {
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "impostazioni",
+              "bozza",
+              "foto",
+              "miniatura",
+              "pasto"
+            ]
+          },
+          "revisione": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "iv": {
+            "type": "string",
+            "format": "byte",
+            "description": "IV di 12 byte."
+          },
+          "dati": {
+            "type": "string",
+            "format": "byte",
+            "description": "Testo cifrato, da 16 byte a 8 MiB."
+          }
+        }
+      },
+      "DocumentoCifrato": {
+        "type": "object",
+        "required": [
+          "id",
+          "tipo",
+          "revisione",
+          "iv",
+          "dati",
+          "aggiornatoAlle"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "impostazioni",
+              "bozza",
+              "foto",
+              "miniatura",
+              "pasto"
+            ]
+          },
+          "revisione": {
+            "type": "integer"
+          },
+          "iv": {
+            "type": "string",
+            "format": "byte",
+            "description": "IV di 12 byte."
+          },
+          "dati": {
+            "type": "string",
+            "format": "byte",
+            "description": "Testo cifrato."
+          },
+          "aggiornatoAlle": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "DocumentoGrezzo": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DocumentoCifrato"
+          },
+          {
+            "type": "object",
+            "required": [
+              "profilo"
+            ],
+            "properties": {
+              "profilo": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Ricevuta": {
+        "type": "object",
+        "required": [
+          "id",
+          "tipo",
+          "revisione",
+          "aggiornatoAlle"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "revisione": {
+            "type": "integer"
+          },
+          "aggiornatoAlle": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Eliminazione": {
+        "type": "object",
+        "required": [
+          "eliminato"
+        ],
+        "properties": {
+          "eliminato": {
+            "type": "boolean"
+          }
+        }
+      },
+      "RigaH2": {
+        "type": "object",
+        "properties": {
+          "profilo": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "revisione": {
+            "type": "integer"
+          },
+          "iv": {
+            "type": "string",
+            "format": "byte",
+            "description": "IV di 12 byte."
+          },
+          "byte": {
+            "type": "integer"
+          },
+          "estratto": {
+            "type": "string",
+            "format": "byte",
+            "description": "Primi 48 byte del testo cifrato."
+          },
+          "aggiornatoAlle": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "VistaH2": {
+        "type": "object",
+        "properties": {
+          "tabella": {
+            "type": "string",
+            "example": "DOCUMENTO_CIFRATO"
+          },
+          "documenti": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RigaH2"
+            }
+          }
+        }
+      },
+      "RichiestaAnalisi": {
+        "type": "object",
+        "required": [
+          "consenso",
+          "foto"
+        ],
+        "properties": {
+          "consenso": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Consenso esplicito all'invio di foto e descrizione a Payara e ad Anthropic."
+          },
           "foto": {
             "type": "string",
-            "format": "binary",
-            "description": "File JPEG o PNG di massimo 5 MiB."
+            "format": "byte",
+            "description": "JPEG o PNG fino a 5 MiB."
           },
           "caption": {
             "type": "string",
-            "maxLength": 500,
-            "description": "Descrizione facoltativa del piatto."
+            "maxLength": 500
           }
         }
       },
-      "RigaIngrediente": {
+      "IngredienteProposto": {
         "type": "object",
-        "required": ["nome"],
+        "required": [
+          "nome",
+          "stato",
+          "origineQuantita"
+        ],
         "properties": {
-          "rigaId": {
-            "type": "string",
-            "description": "ID ricevuto nella bozza. Omettilo per aggiungere una riga."
+          "nome": {
+            "type": "string"
           },
-          "nome": {"type": "string", "maxLength": 500, "example": "Pasta di semola"},
+          "stato": {
+            "type": "string",
+            "enum": [
+              "crudo",
+              "cotto",
+              "non_noto"
+            ]
+          },
           "quantitaG": {
             "type": "number",
-            "example": 160,
-            "minimum": 0,
-            "exclusiveMinimum": true,
             "nullable": true
           },
-          "stato": {"type": "string", "enum": ["crudo", "cotto", "non_noto"]},
-          "voceCatalogoId": {"type": "string", "example": "pasta-cotta-v1", "nullable": true},
-          "sceltaCatalogoManuale": {"type": "boolean"}
+          "origineQuantita": {
+            "type": "string",
+            "enum": [
+              "caption",
+              "stimata",
+              "ricetta",
+              "da_chiarire"
+            ]
+          },
+          "motivazione": {
+            "type": "string"
+          },
+          "fonteUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "fonteTitolo": {
+            "type": "string"
+          }
         }
       },
-      "Ingrediente": {
-        "allOf": [
-          {"$ref": "#/components/schemas/RigaIngrediente"},
-          {
-            "type": "object",
-            "properties": {
-              "origineQuantita": {
-                "type": "string",
-                "enum": ["caption", "ricetta", "stimata", "corretta", "da_chiarire"]
-              },
-              "statoAbbinamento": {"type": "string"},
-              "unita": {"type": "string"},
-              "motivazione": {"type": "string"},
-              "fonteUrl": {"type": "string"},
-              "fonteTitolo": {"type": "string"},
-              "notaAbbinamento": {"type": "string"},
-              "catalogo": {"$ref": "#/components/schemas/VoceCatalogo"},
-              "contributo": {
-                "anyOf": [{"$ref": "#/components/schemas/Macronutrienti"}, {"$ref": "#/components/schemas/Nullo"}]
-              }
-            }
-          }
-        ]
-      },
-      "PropostaHaiku": {
+      "Proposta": {
         "type": "object",
-        "required": ["ingredienti", "dubbi"],
+        "required": [
+          "modello",
+          "ingredienti",
+          "dubbi"
+        ],
         "properties": {
-          "modello": {"type": "string"},
-          "origineAnalisi": {"type": "string"},
-          "statoAnalisi": {"type": "string"},
-          "ingredienti": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
-          "dubbi": {"type": "array", "items": {"type": "string"}}
-        }
-      },
-      "Bozza": {
-        "allOf": [
-          {"$ref": "#/components/schemas/PropostaHaiku"},
-          {
-            "type": "object",
-            "required": ["bozzaId", "revisione", "scadeAlle", "fotoUrl"],
-            "properties": {
-              "bozzaId": {"type": "string", "format": "uuid"},
-              "revisione": {"type": "integer", "format": "int64", "minimum": 0},
-              "caption": {"type": "string"},
-              "scadeAlle": {"type": "string", "format": "date-time"},
-              "fotoUrl": {"type": "string"}
-            }
-          }
-        ]
-      },
-      "BozzaConErrore": {"allOf": [{"$ref": "#/components/schemas/Bozza"}, {"$ref": "#/components/schemas/Errore"}]},
-      "CorrezioneBozza": {
-        "type": "object",
-        "required": ["revisione", "ingredienti"],
-        "properties": {
-          "revisione": {"type": "integer", "format": "int64", "minimum": 0, "example": 1},
+          "modello": {
+            "type": "string",
+            "example": "claude-sonnet-5-5"
+          },
+          "statoAnalisi": {
+            "type": "string",
+            "example": "da_confermare"
+          },
           "ingredienti": {
             "type": "array",
-            "items": {"$ref": "#/components/schemas/RigaIngrediente"},
-            "maxItems": 30
-          }
-        }
-      },
-      "CalcoloBozza": {
-        "allOf": [
-          {"$ref": "#/components/schemas/CorrezioneBozza"},
-          {
-            "type": "object",
-            "properties": {
-              "scenarioId": {"type": "string", "enum": ["demo-sintetica-v1"]},
-              "piattoId": {"type": "string", "nullable": true},
-              "consumatoAlle": {
-                "type": "string",
-                "format": "date-time",
-                "description": "Orario ISO 8601 con fuso, se presente."
-              }
+            "items": {
+              "$ref": "#/components/schemas/IngredienteProposto"
+            }
+          },
+          "dubbi": {
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
-        ]
-      },
-      "Simulazione": {
-        "type": "object",
-        "properties": {
-          "scenario": {"type": "string"},
-          "memoriaId": {"type": "string"},
-          "revisioneMemoria": {"type": "integer", "format": "int64", "minimum": 0},
-          "memoriaInizialeG": {"type": "number"},
-          "memoriaCorrenteG": {"type": "number"},
-          "varianzaIniziale": {"type": "number"},
-          "varianzaCorrente": {"type": "number"},
-          "unitaSimulate": {"type": "number", "description": "Risultato didattico su un profilo sintetico."}
         }
       },
-      "Anteprima": {
+      "ContenutoImpostazioni": {
         "type": "object",
+        "description": "Contenuto in chiaro del documento impostazioni-<profilo>: esiste solo nel browser.",
         "properties": {
-          "stato": {"type": "string", "enum": ["completa", "incompleta"]},
-          "righe": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
-          "daCompletare": {"type": "array", "items": {"type": "string"}},
-          "profilo": {"type": "object"},
-          "versioneRegola": {"type": "string"},
-          "origineAnalisi": {"type": "string"},
-          "consumatoAlle": {"type": "string", "format": "date-time"},
+          "icr": {
+            "type": "number",
+            "description": "Grammi di carboidrati coperti da 1 unità (1-150)."
+          },
+          "isf": {
+            "type": "number",
+            "description": "mg/dL abbassati da 1 unità (5-500)."
+          },
+          "glicemiaObiettivo": {
+            "type": "number",
+            "default": 120
+          },
+          "aggiornateAlle": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CalcoloBolo": {
+        "type": "object",
+        "description": "bolo = carboidrati / ICR + (glicemia attuale − glicemia obiettivo) / ISF, calcolato nel browser. Didattico: non è una prescrizione.",
+        "properties": {
+          "carboidratiG": {
+            "type": "number"
+          },
+          "icr": {
+            "type": "number"
+          },
+          "isf": {
+            "type": "number"
+          },
+          "glicemiaAttuale": {
+            "type": "number"
+          },
+          "glicemiaObiettivo": {
+            "type": "number"
+          },
+          "quotaPasto": {
+            "type": "number"
+          },
+          "correzione": {
+            "type": "number"
+          },
+          "totale": {
+            "type": "number"
+          },
+          "boloCalcolato": {
+            "type": "number",
+            "description": "Totale non negativo; 0 con glicemia sotto 70 mg/dL."
+          },
+          "avvisi": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ContenutoPasto": {
+        "type": "object",
+        "description": "Contenuto in chiaro del documento p-<uuid>: esiste solo nel browser.",
+        "properties": {
+          "pastoId": {
+            "type": "string"
+          },
+          "nomePiatto": {
+            "type": "string"
+          },
+          "consumatoAlle": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "ingredienti": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
           "totali": {
-            "anyOf": [{"$ref": "#/components/schemas/Macronutrienti"}, {"$ref": "#/components/schemas/Nullo"}]
+            "$ref": "#/components/schemas/Macronutrienti"
           },
-          "simulazione": {
-            "anyOf": [{"$ref": "#/components/schemas/Simulazione"}, {"$ref": "#/components/schemas/Nullo"}]
-          }
-        }
-      },
-      "ConfermaPasto": {
-        "type": "object",
-        "required": ["richiestaId", "bozzaId", "revisione", "consumatoAlle", "ingredienti"],
-        "properties": {
-          "richiestaId": {
-            "type": "string",
-            "description": "Chiave idempotente. Riutilizzala solo per ripetere la stessa conferma."
+          "bolo": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CalcoloBolo"
+              }
+            ],
+            "nullable": true
           },
-          "bozzaId": {"type": "string", "format": "uuid"},
-          "revisione": {"type": "integer", "format": "int64", "minimum": 0, "example": 1},
-          "consumatoAlle": {"type": "string", "format": "date-time", "example": "2026-11-20T08:30:00+01:00"},
-          "piattoId": {
-            "type": "string",
-            "description": "ID di un piatto già registrato, in alternativa a nomePiatto."
+          "fotoId": {
+            "type": "string"
           },
-          "nomePiatto": {"type": "string", "maxLength": 200, "example": "Pasta al pomodoro"},
-          "ingredienti": {
-            "type": "array",
-            "items": {"$ref": "#/components/schemas/RigaIngrediente"},
-            "maxItems": 30
+          "miniaturaId": {
+            "type": "string"
           }
-        },
-        "oneOf": [{"required": ["piattoId"]}, {"required": ["nomePiatto"]}]
-      },
-      "PastoRegistrato": {
-        "type": "object",
-        "required": ["pastoId", "piattoId"],
-        "properties": {"pastoId": {"type": "string"}, "piattoId": {"type": "string"}}
-      },
-      "RigaStorico": {
-        "type": "object",
-        "required": ["pastoId", "nomePiatto", "consumatoAlle", "miniaturaUrl", "stimaOriginale"],
-        "properties": {
-          "pastoId": {"type": "string"},
-          "nomePiatto": {"type": "string"},
-          "consumatoAlle": {"type": "string", "format": "date-time"},
-          "miniaturaUrl": {"type": "string"},
-          "stimaOriginale": {"type": "number", "description": "Unità simulate salvate alla registrazione."}
-        }
-      },
-      "PastoStorico": {
-        "allOf": [
-          {"$ref": "#/components/schemas/RigaStorico"},
-          {
-            "type": "object",
-            "required": ["totali"],
-            "properties": {"totali": {"$ref": "#/components/schemas/Macronutrienti"}}
-          }
-        ]
-      },
-      "RiepilogoPasto": {
-        "allOf": [
-          {"$ref": "#/components/schemas/RigaStorico"},
-          {
-            "type": "object",
-            "properties": {
-              "piattoId": {"type": "string"},
-              "fotoUrl": {"type": "string"},
-              "statoFeedback": {"type": "string", "enum": ["registrato", "in_attesa"]}
-            }
-          }
-        ]
-      },
-      "DettaglioPasto": {
-        "allOf": [
-          {"$ref": "#/components/schemas/RiepilogoPasto"},
-          {
-            "type": "object",
-            "properties": {
-              "caption": {"type": "string"},
-              "versioneRegola": {"type": "string"},
-              "versioneProfilo": {"type": "string"},
-              "indiceGlicemico": {"type": "string"},
-              "feedback": {"type": "object", "nullable": true},
-              "ingredienti": {"type": "array", "items": {"$ref": "#/components/schemas/Ingrediente"}},
-              "totali": {"$ref": "#/components/schemas/Macronutrienti"},
-              "profilo": {"type": "object"},
-              "simulazioneOriginale": {"$ref": "#/components/schemas/Simulazione"},
-              "origineAnalisi": {"type": "string"}
-            }
-          }
-        ]
-      },
-      "Piatto": {
-        "type": "object",
-        "properties": {
-          "piattoId": {"type": "string"},
-          "nome": {"type": "string"},
-          "ultimoPasto": {
-            "anyOf": [{"$ref": "#/components/schemas/RiepilogoPasto"}, {"$ref": "#/components/schemas/Nullo"}]
-          }
-        }
-      },
-      "Nullo": {"type": "object", "nullable": true, "enum": [null]},
-      "ArchivioDemo": {
-        "type": "object",
-        "properties": {
-          "pazienti": {"type": "integer"},
-          "piatti": {"type": "integer"},
-          "episodi": {"type": "integer"},
-          "feedback": {"type": "integer"},
-          "episodiId": {"type": "array", "items": {"type": "string"}}
         }
       }
     }

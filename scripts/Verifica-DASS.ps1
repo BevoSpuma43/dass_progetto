@@ -17,11 +17,19 @@ if ($api.StatusCode -ne 200 -or $api.Headers['Content-Type'] -notmatch '^applica
 }
 Write-Output "HTTP 200  ${base}api/stato  $($api.Content)"
 
-$archivio = Invoke-WebRequest -UseBasicParsing -Uri ($base + 'api/demo/archivio') -TimeoutSec 10
-$dati = $archivio.Content | ConvertFrom-Json
-$attesi = 'pasta-01','pasta-02','pasta-03','pasta-04','controllo-01'
-if ($dati.pazienti -lt 1 -or $dati.piatti -lt 2 -or $dati.feedback -lt 3 -or
-    $dati.episodi -ne $dati.episodiId.Count -or @($attesi | Where-Object { $_ -notin $dati.episodiId }).Count -gt 0) {
-    throw 'Archivio dimostrativo incompleto.'
+$profili = Invoke-WebRequest -UseBasicParsing -Uri ($base + 'api/profili') -TimeoutSec 10
+$elenco = $profili.Content | ConvertFrom-Json
+$id = @($elenco.id)
+if ($profili.StatusCode -ne 200 -or $id.Count -ne 2 -or 'utente1' -notin $id -or 'utente2' -notin $id -or $profili.Content -match 'paz-demo') {
+    throw 'Profili inattesi: servono utente1 e utente2, senza paz-demo.'
 }
-Write-Output "HTTP 200  ${base}api/demo/archivio  $($archivio.Content)"
+Write-Output "HTTP 200  ${base}api/profili  $($profili.Content)"
+
+# Senza scambio di chiavi i documenti del diario non sono raggiungibili.
+try {
+    $null = Invoke-WebRequest -UseBasicParsing -Uri ($base + 'api/profili/utente1/documenti?tipo=pasto') -TimeoutSec 10
+    throw 'I documenti del diario rispondono senza scambio di chiavi.'
+} catch [System.Net.WebException] {
+    if ([int]$_.Exception.Response.StatusCode -ne 401) { throw }
+}
+Write-Output "HTTP 401  ${base}api/profili/utente1/documenti  (scambio di chiavi richiesto)"

@@ -1,0 +1,47 @@
+#analisi { padding: clamp(1.25rem, 4vw, 2.25rem); background: white; border: 1px solid var(--bordo); border-radius: .75rem; }
+#analisi > label { display: block; margin-bottom: .5rem; font-weight: 650; }
+#analisi > label[for="caption"] { margin-top: 1.4rem; }
+#analisi input[type="file"], #analisi textarea { display: block; max-width: 100%; font: inherit; }
+#analisi textarea { width: 100%; padding: .7rem; border: 1px solid var(--campo); border-radius: .4rem; }
+#analisi .campi { margin-top: 1.2rem; }
+#analisi small { display: block; }
+#analisi button[type="submit"] { margin-top: 1.2rem; }
+.consenso { display: flex !important; gap: .6rem; align-items: flex-start; margin: .4rem 0 .5rem; padding: .8rem;
+  background: #f6f2e3; border: 1px solid #d9c98f; border-radius: .5rem; font-weight: 600; }
+.consenso input { width: 1.15rem; height: 1.15rem; margin: .15rem 0 0; flex: none; }
+#anteprima { display: block; max-width: 100%; max-height: 14rem; margin-top: 1rem; border-radius: .4rem; }
+#anteprima[hidden] { display: none; }
+#messaggio:not(:empty) { margin: 0; }
+.intestazione-bozza { display: flex; align-items: center; gap: 1rem; margin-bottom: .4rem; }
+.intestazione-bozza img { width: 6.5rem; height: 6.5rem; object-fit: cover; border-radius: .5rem; flex: none; }
+.intestazione-bozza img[hidden] { display: none; }
+.intestazione-bozza p { margin: .2rem 0 0; color: var(--secondario); overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: .82rem; }
+li { margin: .4rem 0; }
+details { margin-top: 1rem; }
+summary { cursor: pointer; }
+#dubbi:empty, #mancanti:empty { display: none; }
+#correzioni table { width: 100%; margin: 1rem 0; border-collapse: collapse; table-layout: fixed; }
+#correzioni th, #correzioni td { padding: .7rem .3rem; text-align: left; vertical-align: top; border-bottom: 1px solid var(--bordo); }
+#correzioni th:last-child { width: clamp(6.4rem, 32%, 11rem); }
+#righe details { margin: .45rem 0 0; font-size: .9rem; }
+#righe summary, #righe .motivazione { overflow-wrap: anywhere; }
+#righe small { display: block; margin-top: .3rem; }
+#righe input, #righe select { width: 100%; padding: .45rem; font: inherit; }
+#righe label { display: block; margin-top: .4rem; }
+#righe .rimuovi { display: block; margin-top: .5rem; padding: .35rem .6rem; }
+#totali { display: grid; grid-template-columns: 1fr auto; gap: .45rem 1rem; max-width: 24rem; }
+#totali dd { margin: 0; font-weight: 650; font-variant-numeric: tabular-nums; }
+#form-bolo .campi { max-width: 30rem; }
+#parametri-bolo { margin: 0 0 .6rem; color: var(--secondario); }
+#risultato-bolo { padding: 1rem 1.1rem; background: #eef5f1; border: 1px solid #b9d3c7; border-radius: .6rem; }
+#risultato-bolo[hidden] { display: none; }
+#risultato-bolo .formula { margin: 0 0 .4rem; }
+#risultato-bolo .sostituzione { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.totale-bolo { display: flex; align-items: baseline; gap: .6rem; margin: .7rem 0 0; }
+.totale-bolo strong { color: var(--ok); font-size: 2rem; font-variant-numeric: tabular-nums; }
+.avvisi { margin: .6rem 0 0; padding-left: 1.2rem; color: var(--avviso); }
+.avvisi:empty { display: none; }
+#bolo > small { display: block; margin-top: .8rem; }
+#conferma-pasto .campi { margin-top: .4rem; }
+#pasto-registrato { margin: .4rem 0 0; }
