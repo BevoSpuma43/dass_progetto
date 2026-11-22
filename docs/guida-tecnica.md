@@ -1,12 +1,12 @@
 # DASS · Guida tecnica
 
-La [homepage del diario](http://127.0.0.1:8080/dass/) collega l'analisi del piatto, lo storico degli inserimenti, il catalogo alimenti, Swagger UI e lo stato del servizio. Il catalogo e lo stato restituiscono JSON. Nella scheda in cui è stata aperta una bozza, la home permette di riprenderla fino alla scadenza. L'editor ha un collegamento **Home** per tornare all'indice.
+La [Home del diario](http://127.0.0.1:8080/dass/) mostra il profilo attivo, i parametri del bolo, le bozze da completare e i collegamenti ad analisi, storico, catalogo, Swagger UI e stato del servizio. Ogni pagina ha il selettore del profilo e il pannello **Scambio di chiavi**.
 
-Per una panoramica e le schermate del prototipo, torna al [README](../README.md).
+Per una panoramica e le schermate torna al [README](../README.md). Architettura, dati e API sono descritti anche nel [manuale del progetto](../DASS_Manuale_Progetto.html).
 
 ## Compilare e avviare
 
-Aprire Windows PowerShell 5.1 nella radice del workspace. I comandi usano i percorsi relativi alla cartella corrente.
+Aprire Windows PowerShell 5.1 nella radice del workspace.
 
 ```powershell
 .\Prepara-DASS.ps1
@@ -14,144 +14,121 @@ mvn clean verify
 if ($LASTEXITCODE -eq 0) { .\scripts\Avvia-DASS.ps1 }
 ```
 
-Al primo avvio Maven richiede accesso a Maven Central per plugin e dipendenze. Il tipo di pacchetto è WAR. Le API Jakarta EE 10 sono disponibili durante la compilazione e Payara fornisce la loro implementazione durante l’esecuzione. Lo script avvia il server in primo piano, usa il WAR in `target/dass.war` e configura il listener HTTP su `127.0.0.1:8080`. Attendere il completamento del deploy.
+Usare sempre `clean`: Maven non rimuove da `target/classes` le classi eliminate e un WAR con le vecchie entità non supera il deploy. `Prepara-DASS.ps1` imposta per Maven l'archivio certificati di Windows (`-Djavax.net.ssl.trustStoreType=Windows-ROOT`), utile dove un antivirus ispeziona le connessioni HTTPS; `Avvia-DASS.ps1` fa lo stesso per Payara, che deve raggiungere Anthropic.
 
-## Verificare e riavviare
+L'archivio predefinito è `var/dati/dass.mv.db`; per usarne un altro impostare `$env:DASS_DATA_DIR` prima dell'avvio. Il parametro `-Porta` vale per l'avvio e per gli script di verifica.
 
-L’archivio dello step 05 include `target/dass.war` prodotto da Maven. Con gli strumenti già preparati si può avviare direttamente `.\scripts\Avvia-DASS.ps1` nella stessa finestra PowerShell.
+## Verificare
 
-Aprire [la pagina locale](http://127.0.0.1:8080/dass/). Il messaggio atteso è «Il backend risponde correttamente». In una seconda PowerShell, dalla radice, eseguire il controllo di pagina, tipo di contenuto e stato JSON.
+Con il server avviato, da una seconda PowerShell preparata:
 
 ```powershell
 .\scripts\Verifica-DASS.ps1
+.\scripts\Verifica-Servizio.ps1
 ```
 
-Il risultato atteso è HTTP 200 su entrambi i percorsi e `{"stato":"ok"}` sull’API. Premere Ctrl+C nella finestra del server. Rieseguire `.\scripts\Avvia-DASS.ps1` nella stessa finestra e ripetere la verifica. In caso di errore di connessione controllare nel log l’esito del deploy e la disponibilità della porta 8080.
+`Verifica-DASS.ps1` controlla pagina, `api/stato`, l'elenco dei profili (`utente1` e `utente2`, senza `paz-demo`) e che i documenti del diario rispondano 401 senza scambio di chiavi. `Verifica-Servizio.ps1` esegue in Java lo stesso protocollo del browser: scambio ECDH, buste cifrate, salvataggio e lettura di un documento cifrato con una chiave che Payara non riceve, isolamento tra profili, busta ripetuta, analisi senza consenso, vista H2 e prova di decifratura con un'altra chiave. Il documento di prova viene eliminato.
 
-Per architettura, modello dati e riferimenti al codice, consulta il [manuale del progetto](../DASS_Manuale_Progetto.html).
+Senza server, dopo `mvn clean verify`:
 
-## Step 02 · Prova con una foto
+| Script | Collaudo |
+| --- | --- |
+| `.\scripts\Verifica-Sicurezza.ps1` | HKDF con il vettore della RFC 5869, accordo ECDH, buste valide, ripetute, alterate, scadute o di un'altra richiesta, punti fuori curva, chiavi distinte per scambio |
+| `.\scripts\Verifica-Persistenza.ps1` | Migrazione di un archivio con `paz-demo`, profili vuoti, revisioni, conflitti, limiti, isolamento tra profili, vista H2 e riavvio, su un H2 temporaneo |
+| `.\scripts\Verifica-ClaudeOffline.ps1` | Richieste a Sonnet 5.5 con trasporto simulato: ricerca, output strutturato, override per Haiku, correzioni della proposta ed errori del fornitore |
 
-Eseguire una volta il comando seguente. Quando appare il prompt, copiare il valore completo dalla Claude Console e incollarlo nel campo mascherato.
+## Chiave Anthropic e modello
 
-```powershell
-.\scripts\Salva-ChiaveHaiku.ps1
+Eseguire una volta `.\scripts\Salva-ChiaveClaude.ps1` e incollare la chiave nel campo mascherato. Lo script la cifra con DPAPI nel profilo Windows corrente (`%LOCALAPPDATA%\DASS\anthropic-key.dpapi`); `Avvia-DASS.ps1` la decifra solo per il processo di Payara. Un Payara già avviato carica la chiave nuova al riavvio.
+
+Il modello predefinito è `claude-sonnet-5-5`; `DASS_CLAUDE_MODEL` lo sostituisce (`DASS_HAIKU_MODEL` resta accettato per compatibilità). La richiesta usa l'output strutturato con lo schema [`proposta-ingredienti.json`](../src/main/resources/analisi/proposta-ingredienti.json), `effort` (basso per la ricerca, medio per la proposta) e il fallback lato server; della risposta si leggono solo i blocchi di testo. La ricerca delle ricette usa lo strumento web search (al massimo due ricerche) e richiede **Web search** abilitato per l'organizzazione; un turno sospeso (`pause_turn`) viene ripreso fino a tre volte. `InterpreteProposta` corregge le righe incoerenti (pesi non validi, ricette non citate dalla ricerca, pesi attribuiti a una descrizione assente) e le segnala nei dubbi.
+
+## Profili e archivio cifrato
+
+All'avvio `AvvioArchivio` elimina una sola volta le tabelle del diario in chiaro della versione precedente (`PAZIENTE`, `PIATTO`, `EPISODIO`, `BOZZA`, `INGREDIENTE`, `FEEDBACK`, `ESITO`, `MEMORIAPIATTO`), importa il catalogo e crea i profili `utente1` e `utente2` con diario vuoto. Il catalogo resta pubblico e in chiaro: le schede non sono dati personali.
+
+La tabella `DOCUMENTO_CIFRATO` conserva per ogni documento solo id, profilo, tipo, revisione, data di aggiornamento, IV e testo cifrato. Payara controlla profilo, tipo, revisione e dimensioni ma non legge mai il contenuto.
+
+| Tipo | Id | Contenuto cifrato nel browser |
+| --- | --- | --- |
+| `impostazioni` | `impostazioni-<profilo>` | ICR, ISF, glicemia obiettivo |
+| `bozza` | `b-<uuid>` | Descrizione, proposta, ingredienti corretti, glicemie |
+| `foto` | `f-<uuid>` | JPEG normalizzato del piatto (lato massimo 1280 px) |
+| `miniatura` | `m-<uuid>` | JPEG di 120 px per lo storico |
+| `pasto` | `p-<uuid>` | Ingredienti con le schede usate, totali, bolo, riferimenti a foto e miniatura |
+
+Gli id sono unici in tutto l'archivio. `PUT` con revisione 0 crea un documento, altrimenti la revisione attesa deve coincidere con quella salvata (409 `REVISIONE_SUPERATA`); un documento di un altro profilo risulta inesistente. Il testo cifrato va da 16 byte a 8 MiB.
+
+## Scambio di chiavi e canale cifrato
+
+Ogni azione che legge o scrive H2 apre un nuovo scambio: apertura della Home, dell'analisi, di una bozza, dello storico o di un pasto, caricamento, correzione della bozza, salvataggio del pasto, rimozione, vista H2 e prova di decifratura. Tutte le richieste dell'azione, miniature comprese, usano quel canale.
+
+1. Il browser genera una coppia ECDH P-256 effimera (privata non esportabile) e invia `POST /api/scambi` con `profiloId`, `azione` e la chiave pubblica (65 byte, Base64).
+2. Payara genera la sua coppia effimera e un sale di 32 byte, calcola il segreto ECDH e risponde con `scambioId`, chiave pubblica, sale, scadenza e le impronte delle due chiavi (primi 64 bit dello SHA-256).
+3. Entrambi derivano la chiave del canale con HKDF-SHA-256, info `DASS-scambio-v1|scambioId|profiloId|azione`, e ne ricavano una chiave AES-GCM a 256 bit. Lo scambio vale 5 minuti e al massimo 500 richieste.
+4. Ogni richiesta porta `X-DASS-Scambio` e `X-DASS-Busta`: `base64url(iv).base64url(cifrato)` di `{metodo, percorso, nonce, istante}`, con AAD `DASS|richiesta|scambioId`. Il filtro rifiuta buste che descrivono un'altra richiesta, più vecchie di 2 minuti o con un nonce già usato.
+5. Il corpo è `{iv, dati}` con AAD `DASS|corpo|scambioId|nonce`; la risposta della risorsa arriva cifrata con AAD `DASS|risposta|scambioId|nonce` e l'intestazione `X-DASS-Cifrato: 1`.
+6. Sui percorsi `/api/profili/{profilo}/…` lo scambio deve appartenere allo stesso profilo (403 `SCAMBIO_DI_ALTRO_PROFILO`). Gli errori del canale arrivano in chiaro: senza uno scambio valido non c'è una chiave per cifrarli e non contengono dati del diario.
+
+Il codice è in [`sicurezza/`](../src/main/java/it/unisi/dass/sicurezza/) lato Java e in [`js/sicurezza/scambio.js`](../src/main/webapp/js/sicurezza/scambio.js) lato browser.
+
+## Chiave del diario nel browser
+
+[`js/sicurezza/cripto.js`](../src/main/webapp/js/sicurezza/cripto.js) genera per ogni profilo una chiave AES-GCM a 256 bit con `extractable=false` e la conserva in IndexedDB (database `dass-chiavi`). La pagina può usarla per cifrare e decifrare ma non può leggerne i byte né inviarla. Ogni documento ha un IV casuale di 12 byte e l'AAD `DASS|diario|v1|profilo|tipo|id`, che lega il testo cifrato al suo profilo, tipo e id. Il pannello mostra solo un identificativo casuale della chiave.
+
+La chiave del diario è distinta da quella del canale: il canale protegge il trasporto della singola azione, la chiave del diario protegge i dati conservati in H2.
+
+## Analisi del piatto
+
+Il modulo richiede foto, glicemia attuale, glicemia obiettivo (predefinita dai parametri del profilo, altrimenti 120 mg/dL) e il consenso all'invio di foto e descrizione a Payara e ad Anthropic. Il browser ricodifica la foto in JPEG senza metadati, crea la miniatura e, nella stessa azione `caricamento`:
+
+1. invia foto e descrizione a `POST /api/analisi-piatto` dentro il canale cifrato; Payara le inoltra a Claude e restituisce la proposta senza salvare nulla;
+2. collega gli ingredienti al catalogo e prepara la bozza;
+3. cifra e salva foto, miniatura e bozza.
+
+Se Claude non è disponibile (chiave assente, errore del fornitore) la bozza viene creata vuota con la foto, e gli ingredienti si inseriscono a mano. Se il salvataggio fallisce dopo l'analisi, la proposta resta sullo schermo con **Salva di nuovo la bozza cifrata**. Una bozza si riapre con `analisi.html?bozza=<uuid>` o dalla Home.
+
+## Calcolo del bolo
+
+Dopo **Calcola carboidrati e bolo** il browser salva la bozza, calcola contributi e totali con i valori per 100 g del catalogo e applica
+
+```text
+bolo = carboidrati / ICR + (glicemia attuale − glicemia obiettivo) / ISF
 ```
 
-Lo script cifra la chiave con DPAPI nel profilo Windows corrente, in `%LOCALAPPDATA%\DASS\anthropic-key.dpapi`. Per sostituirla ripetere il salvataggio. A ogni nuova PowerShell eseguire `.\Prepara-DASS.ps1` e poi `.\scripts\Avvia-DASS.ps1`. Il secondo script decifra il valore per avviare Payara, dando precedenza al file salvato. Se il file manca, resta disponibile la modalità con variabile di sessione. A server fermo la variabile nella shell può risultare vuota. Un Payara già in esecuzione carica la chiave aggiornata al riavvio.
+ICR (1–150 g/U) e ISF (5–500 mg/dL per U) arrivano dai parametri del profilo, salvati cifrati dalla Home. La pagina mostra la formula con i valori sostituiti e aggiorna il risultato mentre si modificano le glicemie. Il bolo calcolato non scende sotto 0 U; con glicemia sotto 70 mg/dL vale 0 U e la pagina segnala l'ipoglicemia. Sono segnalati anche la correzione negativa e la glicemia sopra 250 mg/dL. Il calcolo è didattico: non considera l'insulina attiva e non è una prescrizione. La logica è in [`js/logica/bolo.js`](../src/main/webapp/js/logica/bolo.js).
 
-1. Aprire [la prova locale](http://127.0.0.1:8080/dass/haiku.html). Si può raggiungere anche dalla pagina iniziale.
-2. Selezionare una foto di cibo JPEG o PNG (massimo 5 MiB). Per un piatto di pasta si può usare la descrizione “Pasta al pomodoro, 80 g di pasta a crudo”. Il campo è facoltativo.
-3. Premere **Invia a Haiku**. Ogni invio esplicito effettua una richiesta API. La pagina mostra il modello restituito, gli ingredienti proposti, le quantità da chiarire e il JSON del backend. Si può leggere il risultato senza registrare un pasto.
-4. Per chiudere il collaudo annotare lo stato mostrato, il modello effettivo e un esempio di ingrediente o dubbio. In caso di errore annotare il messaggio, senza includere la chiave.
+**Registra pasto cifrato** salva il documento `p-<uuid>` con ingredienti, schede, totali e bolo e chiude la bozza nella stessa azione; foto e miniatura restano per lo storico. Lo stesso pasto non si può registrare due volte.
 
-Il backend usa Anthropic Messages e come default `claude-haiku-4-5-20251001`. L’eventuale override `DASS_HAIKU_MODEL` deve indicare un modello Haiku accessibile alla chiave e va impostato prima di avviare Payara. Il backend ricodifica la foto in JPEG e invia soltanto l’immagine normalizzata e la caption insieme alle istruzioni di estrazione. La prova usa `POST /dass/prove/haiku`, multipart `foto` e `caption` con header `X-DASS-Prova: 1`; il modulo della pagina usa ora il contratto persistente dello step 04.
+## Cambio di profilo
 
-### Ripetere il collaudo offline
+Il selettore dell'intestazione cambia il profilo in tutte le schede aperte. [`js/profilo.js`](../src/main/webapp/js/profilo.js) interrompe le richieste aperte con un `AbortController`, incrementa la generazione e chiede alla pagina di svuotare lo schermo: dati, foto decifrate, campi del modulo, calcoli e pannello. Ogni azione ricorda la generazione in cui è partita e scarta le risposte arrivate dopo il cambio, quindi una risposta tardiva non può mostrare i dati del profilo precedente.
 
-Eseguire `mvn clean verify` e poi `.\scripts\Verifica-HaikuOffline.ps1` nella PowerShell preparata. Il secondo comando avvia la suite esplicita con il provider JSON di Payara. L’immagine sintetica e le risposte controllate coprono validazione del file, payload con e senza caption, successo, chiave mancante, timeout, guasti di rete, risposte malformate ed errori del fornitore. La chiamata reale richiede il percorso browser descritto sopra.
+## Verifica della cifratura e demo
 
-## Step 03 · Archivio dei pasti
+Nello storico, **Mostra i record di H2** apre l'azione `vista-h2`: `GET /api/archivio-h2` restituisce gli ultimi record della tabella `DOCUMENTO_CIFRATO` di tutti i profili, con metadati, lunghezza ed estratto del testo cifrato. **Prova a decifrare** scarica il record completo (`GET /api/archivio-h2/{profilo}/{id}`) e prova ad aprirlo con la chiave del diario del profilo attivo: riesce solo con i documenti di quel profilo, altrimenti la verifica del tag AES-GCM fallisce. La vista passa dal canale cifrato come ogni lettura di H2 ed espone solo ciò che il server conserva.
 
-Il launcher crea `var/demo/dass.mv.db` nella cartella del progetto al primo avvio. Una build Maven o il riavvio di Payara conservano i pasti. Per usare un archivio diverso impostare `$env:DASS_DATA_DIR` prima di avviare il server. I percorsi relativi partono dalla radice del progetto. La porta predefinita è 8080 e il parametro facoltativo `-Porta` è disponibile sia per l’avvio sia per la verifica.
+Sequenza per l'orale:
 
-Dal browser aprire [il riepilogo dell’archivio](http://127.0.0.1:8080/dass/api/demo/archivio). Su un archivio appena creato si vedono un paziente, due piatti, cinque episodi e tre feedback. `pasta-04` è l’episodio della ricetta ricorrente in attesa di lettura. Il piatto di controllo ha l’episodio `controllo-01`.
+1. Con `utente1` impostare ICR e ISF nella Home, analizzare un piatto, calcolare il bolo e registrare il pasto, mostrando nel pannello gli scambi `caricamento`, `correzione-bozza` e `salvataggio-pasto`.
+2. Passare a `utente2`: lo schermo si svuota, lo storico è vuoto.
+3. Aprire **Archivio H2**: il pasto di `utente1` compare come testo cifrato; **Prova a decifrare** con la chiave di `utente2` fallisce.
+4. Tornare a `utente1` e riaprire il pasto con **Apri il pasto**: foto e valori si decifrano nel browser.
 
-Per ripetere il collaudo di persistenza, dalla radice in una PowerShell preparata:
+## Limiti noti
 
-```powershell
-mvn verify
-if ($LASTEXITCODE -eq 0) { .\scripts\Verifica-Persistenza.ps1 }
-```
+- La scelta del profilo non è un'autenticazione: chiunque usi il browser può selezionare un profilo. La protezione dei dati sta nella cifratura con chiavi che restano nel browser.
+- Lo scambio ECDH non autentica Payara e il prototipo gira in HTTP su `127.0.0.1`: un intermediario attivo potrebbe sostituire le chiavi pubbliche. Le impronte del pannello servono al confronto manuale; in produzione servirebbero HTTPS e una chiave del server firmata o fissata.
+- Payara vede in chiaro foto e descrizione durante l'analisi (con consenso) e conosce i metadati di ogni documento: profilo, id, tipo, dimensione e date.
+- Le chiavi del diario esistono solo nel browser che le ha create: cancellando i dati del sito o usando un altro browser i documenti già salvati non si aprono più e vengono segnalati come non decifrabili.
+- Il bolo è un calcolo didattico.
 
-Lo script usa tre processi Java consecutivi, il driver H2 e il provider EclipseLink inclusi in Payara e un database temporaneo esclusivo. Verifica identità, foto e miniature, riferimenti, letture, stime, vincoli di unicità, annullamento della transazione e sopravvivenza di una modifica al riavvio. Con Payara già avviato, `.\scripts\Verifica-DASS.ps1` controlla anche il riepilogo HTTP. Per ripetere la prova sul server, fermarlo con Ctrl+C nella sua finestra, riavviarlo con la stessa directory dati e ripetere la verifica nell’altra finestra.
+## Catalogo nutrizionale
 
-Le cinque foto sono immagini sintetiche della fixture. Le cinque voci originarie del catalogo contengono dati di test. La voce aggiuntiva della pasta cotta riporta fonte e valori CREA. Il caso da 50 a 52 g è un esito precaricato per i test di integrazione. L’anteprima di prima occorrenza è descritta allo step 05.
+`mvn clean verify` include nel WAR [`macros_tables/catalogo_nutrizionale_it.json`](../macros_tables/catalogo_nutrizionale_it.json): 424 alimenti dell'export USDA Foundation Foods del 29 ottobre 2026, con nome tradotto, nome originale, ID e macronutrienti, più schede aggiuntive per farina 0, burro, zucchero di canna grezzo, lievito di birra secco e sale. Payara importa le schede complete. La pasta cotta riporta fonte e valori CREA; sugo, olio, riso, piselli e pasta cruda sono schede sintetiche di prova e vanno sostituite con fonti reali prima di un uso non didattico, perché influenzano carboidrati e bolo.
 
-## Step 04 · Analizzare e correggere una bozza
-
-Aprire [Analizza un piatto](http://127.0.0.1:8080/dass/haiku.html). Selezionare un JPEG o PNG e aggiungere, se utile, una descrizione come «80 g di pasta a crudo con sugo». Premere **Invia a Haiku**. Verificare alimento, preparazione, abbinamento al catalogo e grammi. Un campo vuoto indica un peso da chiarire. Con **Aggiungi ingrediente**, **Rimuovi** e **Salva bozza** si può correggere la proposta o compilare manualmente una bozza anche quando il fornitore è indisponibile. Lo stesso indirizzo con `?bozza=…` riapre foto e correzioni entro 24 ore dalla creazione.
-
-| Richiesta relativa a `/dass/api` | Contratto |
-|---|---|
-| `POST /analisi-piatto` | Multipart `foto`, `caption` facoltativa e header `X-DASS-Analisi: 1`. Foto normalizzata e bozza vengono salvate prima della chiamata esterna. Un errore del fornitore include `bozzaId`, `fotoUrl`, codice e messaggio per il recupero manuale. |
-| `GET /catalogo?q=pasta` | Filtro facoltativo. Ogni voce contiene ID versionato, unità, preparazione, fonte, IG e valori per 100 g. |
-| `GET /bozze/{id}` e `GET /bozze/{id}/foto` | Restituiscono JSON e JPEG. Una bozza scaduta o assente restituisce 404. |
-| `PUT /bozze/{id}/ingredienti` | JSON con `revisione` e `ingredienti`. Per una riga esistente conservare `rigaId`. Sono ammessi `voceCatalogoId` e `quantitaG` nulli. Il server valida gli ID e i pesi positivi e risponde 409 per una revisione superata. |
-
-Dopo una build Maven, il comando `python .\scripts\Verifica-AnalisiPiatto.py` esegue un collaudo locale su Payara con database temporaneo e trasporto Haiku simulato. Richiede una PowerShell preparata e Python 3.9 o successivo per il solo test. Aggiungere `--da-step03 .\target\DASS_Step_03.zip` per provare anche l’aggiornamento dal WAR precedente.
-
-## Step 05 · Anteprima nutrizionale e simulazione iniziale
-
-Nell’editor controllare alimento, voce cruda o cotta e peso. Scegliere **Continua con queste quantità**. Il backend calcola contributi e totali di carboidrati, proteine, grassi e kcal con i valori per 100 g del catalogo. I dettagli mostrano la fonte, la versione e l’IG disponibile per ogni voce. La modifica di una riga nasconde l’anteprima precedente. **Salva bozza** conserva gli ingredienti. L’anteprima da sola lascia intatti bozza e diario.
-
-`POST /dass/api/bozze/{id}/anteprima` accetta JSON con `revisione` e `ingredienti` nello stesso formato della correzione. Il campo facoltativo `scenarioId` ammette `demo-sintetica-v1`. L’API seleziona sul server il profilo fisso `paz-demo`. Il risultato comprende righe con provenienza, fonte, valori per 100 g e contributi, totali, profilo e versione della regola. Se manca un dato essenziale, HTTP 200 con `stato=incompleta`, elenco dei problemi, totali e simulazione nulli. Input non valido: 400. Bozza assente o scaduta: 404. Revisione superata: 409.
-
-Per ripetere il caso di prova, selezionare 80 g di pasta cruda, 40 g di sugo cotto e 6 g di olio crudo. Il catalogo della demo dà 50 g di carboidrati, 7 g di proteine, 8 g di grassi e 300 kcal. Per il profilo sintetico il risultato iniziale è 5 unità simulate. È un dato didattico. Per rieseguire il collaudo dalla PowerShell preparata, compilare il WAR con `mvn verify` ed eseguire `python .\scripts\Verifica-AnalisiPiatto.py`.
-
-## Porzione al ristorante
-
-Caricare la foto e descrivere il piatto, ad esempio «fusilli al ragù di triglia, porzione normale». Il peso a crudo è facoltativo. Haiku cerca ricette con ingredienti, dosi e numero di persone, quindi propone grammi per una sola porzione, inclusi condimenti e guarnizioni. La tabella permette di modificare ogni riga. Aprire **Stima e scheda nutrizionale** per leggere le assunzioni e la ricetta citata. **Continua con queste quantità** salva la bozza e apre l’anteprima anche se mancano schede nutrizionali. I totali richiedono un abbinamento per ogni ingrediente.
-
-Per la ricerca servono la chiave Anthropic già configurata e la funzione Web search abilitata per l'organizzazione. L’analisi usa due richieste Messages, con un turno aggiuntivo se la ricerca viene sospesa, e la ricerca può comportare costi API aggiuntivi. Se mancano fonti citabili, la pagina lo segnala e il modello usa foto e porzioni tipiche. Le bozze già salvate conservano i loro valori. Per ottenere una nuova proposta inviare nuovamente la foto.
-
-[Documentazione della ricerca Anthropic](https://platform.claude.com/docs/en/agents-and-tools/tool-use/web-search-tool) · [Scheda CREA per la pasta cotta](https://www.alimentinutrizione.it/tabelle-nutrizionali/000805)
-
-## Step 06 · Registrazione del pasto e storico REST
-
-Nell'editor completare pesi e abbinamenti e scegliere **Continua con queste quantità**. Sotto l'anteprima, scegliere un piatto abituale oppure **Nuovo piatto**, inserire il nome se necessario e confermare la data e l'ora. Per un piatto abituale la pagina aggiorna l'anteprima usando la sua memoria corrente. Premere **Registra pasto**. La conferma mostra i collegamenti al dettaglio e allo storico del piatto.
-
-Foto, miniatura, orario, quantità, provenienza, fonti, totali e simulazione restano consultabili dopo la scadenza della bozza. L'interfaccia assegna la stessa chiave di invio a una bozza anche in due schede. Se l'esito non arriva, **Riprova registrazione** usa gli stessi dati della conferma. Per registrare un altro episodio si parte da una nuova bozza.
-
-| Richiesta relativa a `/dass/api` | Risposta |
-|---|---|
-| `POST /pasti` | `201` con `pastoId`, `piattoId` e header `Location`. Un retry con la stessa chiave e gli stessi dati restituisce gli stessi identificativi. Una conferma diversa con la stessa chiave restituisce `409`. |
-| `GET /pazienti/{id}/piatti` | Piatti del paziente con l'ultimo episodio, dal più recente. L'ID del paziente dimostrativo è `paz-demo`. |
-| `GET /piatti/{id}/pasti` | Episodi del piatto dal più recente, con orario, foto, miniatura e stato del feedback. |
-| `GET /pasti/{id}` | Dettaglio con ingredienti, totali, stima originale, versione della memoria e feedback, se presente. |
-| `GET /pasti/{id}/foto` | Foto JPEG dell'episodio. Il parametro `?miniatura=true` restituisce la miniatura. |
-
-Per provare la registrazione da PowerShell, aprire una bozza completa e copiare il suo ID dalla barra degli indirizzi.
-
-```powershell
-$base = 'http://127.0.0.1:8080/dass/api'
-$bozza = Invoke-RestMethod "$base/bozze/ID-BOZZA"
-$conferma = @{
-    richiestaId   = [guid]::NewGuid().ToString()
-    bozzaId       = $bozza.bozzaId
-    revisione     = $bozza.revisione
-    consumatoAlle = [DateTimeOffset]::Now.ToString('o')
-    nomePiatto    = 'Pasta di prova'
-    ingredienti   = $bozza.ingredienti
-} | ConvertTo-Json -Depth 10
-$pasto = Invoke-RestMethod "$base/pasti" -Method Post -ContentType 'application/json; charset=utf-8' -Body $conferma
-Invoke-RestMethod "$base/pasti/$($pasto.pastoId)"
-```
-
-Per un piatto abituale inviare `piattoId` al posto di `nomePiatto`. Conservare la stessa richiesta durante un retry, compreso l'orario. `consumatoAlle` richiede un offset ISO 8601, per esempio `2026-11-19T13:10:00+01:00`. L'archivio espone gli istanti in UTC a risoluzione di un secondo. Una bozza scaduta o un riferimento sconosciuto produce `404`, una revisione superata produce `409`, una richiesta incompleta o malformata produce `400`. Per ottenere anche l'anteprima della ricorrenza, passare `piattoId` a `POST /bozze/{id}/anteprima`.
-
-Dopo `mvn verify`, `./scripts/Verifica-Persistenza.ps1 -SoloPastiInMemoria` esegue il collaudo dello step 06 in H2 in memoria. `python ./scripts/Verifica-AnalisiPiatto.py` ripete le prove via HTTP e verifica la lettura dell'episodio dopo il riavvio di Payara con un database temporaneo.
-
-## Catalogo nutrizionale in italiano
-
-`mvn verify` include nel WAR `macros_tables/catalogo_nutrizionale_it.json`. Il file contiene i 424 alimenti dell'export USDA del 29 ottobre 2026, con nome tradotto, nome originale, ID e macronutrienti. Cinque schede aggiuntive coprono farina 0, burro, zucchero di canna grezzo, lievito di birra secco e sale. Payara importa le 369 schede complete, aggiorna i nomi delle schede USDA già presenti e conserva ID e valori associati ai dati precedenti.
-
-DASS precompila **Voce del catalogo** per gli ingredienti con una corrispondenza univoca. La scheda selezionata compare accanto all'ingrediente. In **Stima e scheda nutrizionale** si possono leggere le note, cercare una scheda o cambiare la scelta. Il sistema riprova a collegare le righe prive di scheda quando si riapre una vecchia bozza. Le selezioni salvate, anche **Da chiarire** scelto manualmente, vengono rispettate.
-
-Nelle ricette da forno, una dose di farina, latte o burro divisa per il numero di porzioni si riferisce di norma all'ingrediente prima della cottura. Per le vecchie bozze in cui Haiku la marcava come cotta, DASS propone la scheda corrispondente e chiede di verificare la base del peso. Il nome e i grammi della proposta restano disponibili per la correzione.
-
-I valori sono per 100 g. Le schede USDA riportano carboidrati totali per differenza, fibra inclusa. Le schede CREA aggiuntive riportano carboidrati disponibili. L'importazione salta le righe con valori necessari mancanti o negativi. [Documentazione USDA Foundation Foods](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/)
-
-## Storico inserimenti e rimozione delle bozze
-
-Dalla home scegliere **Storico inserimenti**. I pasti del profilo dimostrativo sono ordinati dal più recente e mostrano foto, nome, data e ora, macro, energia e insulina simulata salvati al momento della registrazione. Aprire **Ingredienti e quantità** per vedere il dettaglio del pasto.
-
-In una bozza aperta, **Rimuovi bozza** chiede conferma e torna alla home. I pasti registrati conservano foto, ingredienti e valori anche dopo la rimozione della bozza.
-
-`GET /dass/api/pazienti/{id}/pasti` restituisce lo storico cronologico. `DELETE /dass/api/bozze/{id}?revisione=N` restituisce 204 anche se la bozza è già assente. Se la revisione è stata superata e la bozza è ancora aperta, restituisce 409. Il parametro `revisione` è facoltativo per i client REST.
+Il browser precompila **Voce del catalogo** quando la corrispondenza per nome e preparazione è univoca e segnala le approssimazioni. I valori sono per 100 g; le schede USDA riportano carboidrati totali per differenza, fibra inclusa, le schede CREA i carboidrati disponibili. [Documentazione USDA Foundation Foods](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/) · [Scheda CREA della pasta cotta](https://www.alimentinutrizione.it/tabelle-nutrizionali/000805)
 
 ## Swagger UI e OpenAPI
 
-Dalla home aprire **Swagger UI**, oppure visitare [Swagger UI](http://127.0.0.1:8080/dass/swagger.html). Per una prima prova espandere `GET /api/stato`, premere **Try it out** e poi **Execute**. Il server delle richieste è il DASS locale sulla stessa porta della pagina.
-
-La [specifica OpenAPI in JSON](http://127.0.0.1:8080/dass/openapi.json) è inclusa nel WAR e usata anche da MicroProfile OpenAPI di Payara su `/openapi`. Il sorgente da aggiornare quando cambia un endpoint è `src/main/webapp/openapi.json`. La pagina interattiva carica Swagger UI 5.33.3 da jsDelivr. Il JSON resta disponibile dal server locale.
+[Swagger UI](http://127.0.0.1:8080/dass/swagger.html) carica la [specifica OpenAPI](http://127.0.0.1:8080/dass/openapi.json) dal sorgente `src/main/webapp/openapi.json`. Si possono provare direttamente `GET /api/stato`, `GET /api/catalogo`, `GET /api/profili` e `POST /api/scambi`. Gli endpoint del diario, dell'analisi e della vista H2 richiedono buste cifrate che Swagger UI non sa preparare: la specifica ne descrive intestazioni, buste e contenuto in chiaro, e `Verifica-Servizio.ps1` ne mostra un client completo.
