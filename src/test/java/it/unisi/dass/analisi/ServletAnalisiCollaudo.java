@@ -15,19 +15,19 @@ public class ServletAnalisiCollaudo extends ProvaHaikuServlet {
      * senza chiamate esterne.
      */
     @Override
-    protected JsonObject analizzaConHaiku(byte[] foto, String caption) {
+    protected JsonObject analizzaConClaude(byte[] foto, String caption) {
         var invii = new java.util.concurrent.atomic.AtomicInteger();
-        var proposta = new HaikuClient("test", "haiku-di-collaudo", richiesta -> {
-            if (invii.getAndIncrement() == 0) return new HaikuClient.Esito(200, """
+        var proposta = new ClaudeClient("test", "haiku-di-collaudo", richiesta -> {
+            if (invii.getAndIncrement() == 0) return new ClaudeClient.Esito(200, """
                     {"stop_reason":"end_turn","content":[{"type":"text","text":"Per quattro persone: 280 g di pesce, 20 g di olio.",
                     "citations":[{"type":"web_search_result_location","title":"Ricetta di collaudo","url":"https://example.org/ricetta"}]}]}
                     """);
-            if (caption.contains("croissant")) return new HaikuClient.Esito(200, """
+            if (caption.contains("croissant")) return new ClaudeClient.Esito(200, """
                     {"model":"haiku-di-collaudo","stop_reason":"tool_use","content":[{"type":"tool_use","name":"proponi_ingredienti",
                     "input":{"ingredienti":[{"nome":"Farina di grano tenero tipo 00","stato":"crudo",
                     "origineQuantita":"stimata","quantitaG":50}],"dubbi":[]}}]}
                     """);
-            if (caption.contains("ristorante")) return new HaikuClient.Esito(200, """
+            if (caption.contains("ristorante")) return new ClaudeClient.Esito(200, """
                     {"model":"haiku-di-collaudo","stop_reason":"tool_use","content":[{"type":"tool_use","name":"proponi_ingredienti",
                     "input":{"ingredienti":[
                     {"nome":"Triglia","stato":"crudo","origineQuantita":"ricetta","quantitaG":70,"fonteUrl":"https://example.org/ricetta","motivazione":"280 g per quattro porzioni, peso della ricetta a crudo."},
@@ -45,7 +45,7 @@ public class ServletAnalisiCollaudo extends ProvaHaikuServlet {
                         "dubbi":["Quanto sugo?"]}}]}
                     """;
             if (caption.isBlank()) corpo = corpo.replace("\"caption\"", "\"stimata\"");
-            return new HaikuClient.Esito(200, corpo);
+            return new ClaudeClient.Esito(200, corpo);
         }).analizza(foto, caption);
         return Json.createObjectBuilder(proposta).add("origineAnalisi","simulata").build();
     }

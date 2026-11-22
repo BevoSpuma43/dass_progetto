@@ -28,13 +28,14 @@ try {
                 $env:ANTHROPIC_API_KEY = [System.Net.NetworkCredential]::new('', $protetta).Password
             } finally { $protetta.Dispose() }
         } catch {
-            throw 'Chiave salvata illeggibile. Eseguire scripts\Salva-ChiaveHaiku.ps1 e riprovare.'
+            throw 'Chiave salvata illeggibile. Eseguire scripts\Salva-ChiaveClaude.ps1 e riprovare.'
         }
     }
     Write-Host "Archivio DASS: $dataDir\dass.mv.db"
     Push-Location -LiteralPath $dataDir
     try {
-        & $java -jar $env:DASS_PAYARA_JAR --noCluster --disablePhoneHome --prebootcommandfile $preboot --port $Porta --contextroot /dass --deploy $war
+        # I certificati di Windows valgono anche dove un antivirus ispeziona le connessioni HTTPS.
+        & $java '-Djavax.net.ssl.trustStoreType=Windows-ROOT' -jar $env:DASS_PAYARA_JAR --noCluster --disablePhoneHome --prebootcommandfile $preboot --port $Porta --contextroot /dass --deploy $war
         if ($LASTEXITCODE -ne 0) { throw "Payara terminato con codice $LASTEXITCODE." }
     } finally { Pop-Location }
 } finally {

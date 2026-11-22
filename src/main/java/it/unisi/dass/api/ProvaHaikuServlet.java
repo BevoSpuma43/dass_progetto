@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
-/** Riceve le foto multipart per la prova Haiku e per l'analisi che crea una bozza. */
+/** Riceve le foto multipart per la prova con Claude e per l'analisi che crea una bozza. */
 @WebServlet({"/prove/haiku", "/api/analisi-piatto"})
 @MultipartConfig(maxFileSize = FotoPiatto.MAX_BYTES, maxRequestSize = FotoPiatto.MAX_BYTES + 65536L)
 public class ProvaHaikuServlet extends HttpServlet {
@@ -20,11 +20,11 @@ public class ProvaHaikuServlet extends HttpServlet {
     private ArchivioBozze bozze;
 
     /**
-     * Delega la foto normalizzata e la descrizione al client Haiku. Il collaudo sovrascrive questo
+     * Delega la foto normalizzata e la descrizione al client Claude. Il collaudo sovrascrive questo
      * punto per simulare il fornitore.
      */
-    protected JsonObject analizzaConHaiku(byte[] foto, String caption) {
-        return new HaikuClient().analizza(foto, caption);
+    protected JsonObject analizzaConClaude(byte[] foto, String caption) {
+        return new ClaudeClient().analizza(foto, caption);
     }
 
     /**
@@ -62,7 +62,7 @@ public class ProvaHaikuServlet extends HttpServlet {
             try (var input = foto.getInputStream()) { jpeg = FotoPiatto.prepara(input); }
             // La prima transazione termina prima di contattare il servizio esterno.
             if (!prova) bozzaId = bozze.crea(jpeg, caption);
-            var proposta = analizzaConHaiku(jpeg, caption);
+            var proposta = analizzaConClaude(jpeg, caption);
             risposta = prova ? proposta : bozze.completa(bozzaId, proposta);
         } catch (ErroreAnalisi e) {
             res.setStatus(e.statoHttp());

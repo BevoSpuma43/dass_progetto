@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "description": "Proposta alimentare da confermare, con dubbi sulle quantità.",
+  "properties": {
+    "ingredienti": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "quantitaG": {
+            "anyOf": [
+              {"type": "number"},
+              {"type": "null"}
+            ]
+          },
+          "stato": {
+            "type": "string",
+            "enum": ["crudo", "cotto", "non_noto"]
+          },
+          "motivazione": {
+            "type": "string",
+            "description": "Base della quantità per una porzione, stato e assunzioni, al massimo 500 caratteri."
+          },
+          "fonteUrl": {
+            "type": "string",
+            "description": "URL esatto della ricetta citata per questa riga, altrimenti stringa vuota."
+          },
+          "origineQuantita": {
+            "type": "string",
+            "enum": ["caption", "ricetta", "stimata", "da_chiarire"]
+          }
+        },
+        "required": ["nome", "quantitaG", "stato", "origineQuantita", "motivazione", "fonteUrl"],
+        "additionalProperties": false
+      }
+    },
+    "dubbi": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": ["ingredienti", "dubbi"],
+  "additionalProperties": false
+}

@@ -98,6 +98,10 @@ try {
         }
     }
     $env:DASS_PAYARA_JAR = $payaraJar
+    # Maven usa i certificati di Windows: funziona anche dove un antivirus ispeziona HTTPS.
+    if ($env:MAVEN_OPTS -notmatch 'trustStoreType') {
+        $env:MAVEN_OPTS = ("$env:MAVEN_OPTS -Djavax.net.ssl.trustStoreType=Windows-ROOT").Trim()
+    }
     Write-Host "Ambiente pronto per lo step 1. Payara Micro $payaraVersion verificato."
 } catch {
     $env:JAVA_HOME = $previousJava

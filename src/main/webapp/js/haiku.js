@@ -101,7 +101,7 @@ function riga(i = {}) {
     notaAbbinamento.textContent = daVerificare ? i.notaAbbinamento : "";
   }
   mostraScheda();
-  const origini = {caption: "Peso dalla descrizione", stimata: "Stima di Haiku", ricetta: "Stima da ricetta",
+  const origini = {caption: "Peso dalla descrizione", stimata: "Stima di Claude", ricetta: "Stima da ricetta",
     corretta: "Peso inserito manualmente", da_chiarire: "Peso da chiarire"};
   const nota = [origini[i.origineQuantita], i.stato === "non_noto" ? "Preparazione da chiarire" : i.stato,
     i.statoAbbinamento === "sconosciuto" ? "Nessuna scheda associata" :
@@ -192,7 +192,7 @@ form.addEventListener("submit", async event => {
   busy(form, true);
   risultato.hidden = true;
   salvataggio.textContent = "";
-  messaggio.textContent = "Haiku sta analizzando la foto e cercando ricette per stimare le quantità.";
+  messaggio.textContent = "Claude sta analizzando la foto e cercando ricette per stimare le quantità.";
   try {
     await mostra(await json("api/analisi-piatto", {method: "POST", headers: {"X-DASS-Analisi": "1"}, body: dati}));
   } catch (e) { messaggio.textContent = e.message; }
