@@ -49,12 +49,16 @@ try {
                 $risposta.ContentType = $tipo
                 $risposta.Headers.Add('Cache-Control', 'no-cache')
                 $risposta.ContentLength64 = $byte.Length
-                $risposta.OutputStream.Write($byte, 0, $byte.Length)
+                # Una richiesta HEAD riceve solo le intestazioni.
+                if ($contesto.Request.HttpMethod -ne 'HEAD') { $risposta.OutputStream.Write($byte, 0, $byte.Length) }
             } else {
                 $risposta.StatusCode = 404
             }
+        } catch {
+            # Un errore su una singola richiesta non deve fermare l'anteprima.
+            Write-Warning "Richiesta non servita: $($_.Exception.Message)"
         } finally {
-            $risposta.Close()
+            try { $risposta.Close() } catch { }
         }
     }
 } finally {

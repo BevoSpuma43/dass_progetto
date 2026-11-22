@@ -104,7 +104,10 @@ export async function analizza(jpeg, caption, {chiave, modello}) {
       messaggi = [...messaggi, {role: "assistant", content: risposta.content}];
     }
   } catch (e) {
-    if (!(e instanceof ErroreAnalisi)) throw new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Risposta della ricerca illeggibile.");
+    if (!(e instanceof ErroreAnalisi)) {
+      console.warn("DASS · risposta della ricerca illeggibile:", e);
+      throw new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Risposta della ricerca illeggibile.");
+    }
     // Alcuni account consentono Messages ma hanno la ricerca disabilitata.
     if (e.codice !== "RICHIESTA_RIFIUTATA" && e.codice !== "ACCESSO_NEGATO") throw e;
   }
@@ -115,7 +118,7 @@ export async function analizza(jpeg, caption, {chiave, modello}) {
       : "Appunti delle ricette consultate:\n" + ricerca.appunti
   }];
   const finale = {...base, messages: [{...utente, content: dati}]};
-  return interpreta(await invia(finale, chiave), caption.trim() !== "", ricerca.fonti);
+  return interpreta(await invia(finale, chiave), caption.trim() !== "", ricerca.fonti, modello);
 }
 
 /** Chiamata autenticata con timeout; traduce gli stati del fornitore e gli errori di rete in errori applicativi. */
@@ -149,7 +152,8 @@ async function invia(corpo, chiave) {
           return await risposta.json();
         } catch (e) {
           if (e.name === "AbortError") throw new ErroreAnalisi(504, "TIMEOUT", "Haiku non ha risposto entro il tempo previsto.");
-          throw new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Haiku ha restituito una proposta incompleta o illeggibile. Riprova.");
+          console.warn("DASS · risposta di Anthropic non in formato JSON:", e);
+          throw new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Haiku ha restituito una proposta incompleta o illeggibile (risposta non in formato JSON). Riprova.");
         }
       case 401: case 403:
         throw new ErroreAnalisi(502, "ACCESSO_NEGATO", "Anthropic ha rifiutato le credenziali o l’accesso al modello.");
@@ -201,77 +205,109 @@ function urlWeb(valore) {
 }
 
 /**
- * Estrae il singolo risultato dello strumento e valida righe, grammi, provenienza e citazioni.
- * Segnala i dati che l'utente deve verificare.
+ * Estrae il singolo risultato dello strumento e lo normalizza riga per riga. A differenza del backend
+ * Java, una riga incoerente non invalida tutta la proposta: viene corretta come farebbe l'utente
+ * nell'editor e la correzione resta visibile. Le regole sulle fonti non cambiano: un URL che la
+ * ricerca non ha citato non viene mai mostrato e la quantità diventa una stima da verificare.
  */
-function interpreta(envelope, conCaption, fonti) {
+function interpreta(envelope, conCaption, fonti, modelloRichiesto) {
   if (envelope?.stop_reason === "refusal") {
     throw new ErroreAnalisi(502, "RICHIESTA_RIFIUTATA", "Haiku non ha analizzato questa foto. Prova con un’altra immagine o compila la bozza a mano.");
   }
-  try {
-    if (envelope.stop_reason !== "tool_use") throw rispostaInvalida();
-    let proposta = null;
-    for (const blocco of envelope.content) {
-      if (blocco.type !== "tool_use") continue;
-      if (proposta !== null || blocco.name !== "proponi_ingredienti") throw rispostaInvalida();
-      proposta = blocco.input;
+  if (envelope?.stop_reason === "max_tokens") throw scartata("proposta interrotta perché troppo lunga", envelope);
+  if (envelope?.stop_reason !== "tool_use") throw scartata("stop_reason " + envelope?.stop_reason, envelope);
+  const blocchi = Array.isArray(envelope.content) ? envelope.content.filter(b => b?.type === "tool_use") : [];
+  if (blocchi.length !== 1 || blocchi[0].name !== "proponi_ingredienti") throw scartata("strumento assente o ripetuto", envelope);
+  const proposta = blocchi[0].input;
+  if (!oggetto(proposta) || !Array.isArray(proposta.ingredienti)) throw scartata("elenco degli ingredienti assente", envelope);
+
+  const correzioni = [];
+  const ingredienti = [];
+  let senzaNome = false;
+  let fontiNonCitate = false;
+  proposta.ingredienti.slice(0, 30).forEach((i, indice) => {
+    const nome = oggetto(i) ? testo(i.nome) : null;
+    if (!nome) {
+      senzaNome = true;
+      correzioni.push(`riga ${indice + 1}: nome assente`);
+      return;
     }
-    if (proposta === null || typeof proposta !== "object") throw rispostaInvalida();
-    const lista = proposta.ingredienti;
-    const dubbi = "dubbi" in proposta ? proposta.dubbi : [];
-    if (!Array.isArray(lista) || !Array.isArray(dubbi) || lista.length > 30 || dubbi.length > 30 ||
-        (lista.length === 0 && dubbi.length === 0)) throw rispostaInvalida();
-    const ingredienti = [];
-    let senzaNome = false;
-    for (const i of lista) {
-      if (i === null || typeof i !== "object" || Array.isArray(i)) throw rispostaInvalida();
-      if (!("nome" in i) || i.nome === null || (typeof i.nome === "string" && i.nome.trim() === "")) {
-        senzaNome = true;
-        continue;
-      }
-      const nome = testo(i.nome);
-      if ("stato" in i && typeof i.stato !== "string") throw rispostaInvalida();
-      const stato = "stato" in i ? i.stato : "non_noto";
-      let origine = typeof i.origineQuantita === "string" ? i.origineQuantita : "da_chiarire";
-      let grammi = "quantitaG" in i ? i.quantitaG : null;
-      // Un campo omesso resta correggibile. Un numero senza provenienza resta da chiarire.
-      if (grammi === null || !("origineQuantita" in i)) {
-        grammi = null;
-        origine = "da_chiarire";
-      }
-      if (!STATI.has(stato) || !ORIGINI.has(origine) || (!conCaption && origine === "caption")) throw rispostaInvalida();
-      if (origine === "da_chiarire") {
-        if (grammi !== null) throw rispostaInvalida();
-      } else if (typeof grammi !== "number" || !(grammi > 0)) {
-        throw rispostaInvalida();
-      }
-      const riga = {nome, stato, quantitaG: grammi, origineQuantita: origine};
-      if (origine === "ricetta") {
-        const url = typeof i.fonteUrl === "string" ? i.fonteUrl : "";
-        if (!fonti.has(url)) throw rispostaInvalida();
+    const stato = STATI.has(i.stato) ? i.stato : "non_noto";
+    let origine = ORIGINI.has(i.origineQuantita) ? i.origineQuantita : "da_chiarire";
+    let grammi = peso(i.quantitaG);
+    if (grammi === null && i.quantitaG !== null && origine !== "da_chiarire") {
+      correzioni.push(`${nome}: peso non valido (${JSON.stringify(i.quantitaG)})`);
+    }
+    // Un peso assente o non valido, o dichiarato da chiarire, resta da chiarire nell'editor.
+    if (grammi === null || origine === "da_chiarire") {
+      grammi = null;
+      origine = "da_chiarire";
+    }
+    if (origine === "caption" && !conCaption) {
+      origine = "stimata";
+      correzioni.push(`${nome}: peso attribuito a una descrizione assente`);
+    }
+    const riga = {nome, stato, quantitaG: grammi, origineQuantita: origine};
+    if (origine === "ricetta") {
+      const url = fonteCitata(fonti, i.fonteUrl);
+      if (url) {
         riga.fonteUrl = url;
         riga.fonteTitolo = fonti.get(url);
+      } else {
+        riga.origineQuantita = "stimata";
+        fontiNonCitate = true;
+        correzioni.push(`${nome}: ricetta non citata dalla ricerca (${i.fonteUrl})`);
       }
-      if ("motivazione" in i) riga.motivazione = testo(i.motivazione);
-      ingredienti.push(riga);
     }
-    const domande = dubbi.map(testo);
-    if (senzaNome) domande.push("Un ingrediente non ha un nome riconoscibile. Verifica la foto e aggiungilo manualmente.");
-    if (fonti.size === 0 && lista.length > 0) {
-      domande.push("Ricerca senza fonti utilizzabili. Le stime si basano sulla foto o su porzioni tipiche.");
-    }
-    return {modello: testo(envelope.model), statoAnalisi: "da_confermare", ingredienti, dubbi: domande};
-  } catch {
-    throw rispostaInvalida();
+    const motivazione = testo(i.motivazione);
+    if (motivazione) riga.motivazione = motivazione;
+    ingredienti.push(riga);
+  });
+
+  const domande = (Array.isArray(proposta.dubbi) ? proposta.dubbi : []).map(testo).filter(Boolean).slice(0, 30);
+  if (proposta.ingredienti.length > 30) domande.push("Haiku ha proposto più di 30 ingredienti: sono mostrati i primi 30.");
+  if (senzaNome) domande.push("Un ingrediente non ha un nome riconoscibile. Verifica la foto e aggiungilo manualmente.");
+  if (fontiNonCitate) {
+    domande.push("Per alcune righe Haiku ha indicato una ricetta che la ricerca non ha restituito: quei pesi sono trattati come stime da verificare.");
   }
+  if (fonti.size === 0 && ingredienti.length > 0) {
+    domande.push("Ricerca senza fonti utilizzabili. Le stime si basano sulla foto o su porzioni tipiche.");
+  }
+  if (ingredienti.length === 0 && domande.length === 0) {
+    domande.push("Haiku non ha riconosciuto ingredienti nella foto. Puoi compilare la bozza a mano.");
+  }
+  if (correzioni.length > 0) console.info("DASS · proposta di Haiku corretta prima dell'editor:", correzioni);
+  return {modello: testo(envelope.model) ?? modelloRichiesto, statoAnalisi: "da_confermare", ingredienti, dubbi: domande};
 }
 
-/** Toglie gli spazi ai bordi e rifiuta un testo vuoto, non testuale o più lungo di 500 caratteri. */
+function oggetto(valore) {
+  return valore !== null && typeof valore === "object" && !Array.isArray(valore);
+}
+
+/** Testo senza spazi ai bordi, accorciato a 500 caratteri; null se assente o vuoto. */
 function testo(valore) {
-  if (typeof valore !== "string" || valore.trim() === "" || valore.length > 500) throw rispostaInvalida();
-  return valore.trim();
+  if (typeof valore !== "string" || valore.trim() === "") return null;
+  const pulito = valore.trim();
+  return pulito.length > 500 ? pulito.slice(0, 499).trimEnd() + "…" : pulito;
 }
 
-function rispostaInvalida() {
-  return new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Haiku ha restituito una proposta incompleta o illeggibile. Riprova.");
+/** Grammi positivi: accetta anche un numero scritto come testo, ad esempio "80" o "12,5 g". */
+function peso(valore) {
+  if (typeof valore === "string" && /^\s*\d+(?:[.,]\d+)?\s*g?\s*$/i.test(valore)) valore = Number(valore.replace(",", ".").replace(/g/i, ""));
+  return typeof valore === "number" && Number.isFinite(valore) && valore > 0 ? valore : null;
+}
+
+/** URL citato dalla ricerca che corrisponde a quello indicato, ignorando barra finale, frammento e maiuscole. */
+function fonteCitata(fonti, valore) {
+  if (typeof valore !== "string" || valore.trim() === "") return null;
+  if (fonti.has(valore.trim())) return valore.trim();
+  const forma = url => url.trim().replace(/#.*$/, "").replace(/\/+$/, "").toLowerCase();
+  const cercata = forma(valore);
+  return [...fonti.keys()].find(url => forma(url) === cercata) ?? null;
+}
+
+/** Errore per una risposta inutilizzabile; il motivo resta visibile nel messaggio e nella console. */
+function scartata(motivo, envelope) {
+  console.warn("DASS · risposta di Haiku scartata:", motivo, envelope);
+  return new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", `Haiku ha restituito una proposta incompleta o illeggibile (${motivo}). Riprova.`);
 }
