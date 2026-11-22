@@ -7,13 +7,12 @@ import java.awt.Color;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
 import java.util.Set;
 
-/** Controlla e ricodifica le foto caricate e genera le miniature del diario. */
+/** Controlla e ricodifica la foto inviata all’analisi; le miniature del diario le crea il browser. */
 public final class FotoPiatto {
     public static final int MAX_BYTES = 5 * 1024 * 1024;
     private static final int LATO = 1280;
@@ -24,13 +23,6 @@ public final class FotoPiatto {
     /** Decodifica i pixel e crea un nuovo JPEG, escludendo nome file ed EXIF. */
     public static byte[] prepara(InputStream input) {
         return ridimensiona(input, LATO);
-    }
-
-    /**
-     * Crea dal JPEG del pasto una miniatura con lato massimo di 120 pixel, mantenendo le proporzioni.
-     */
-    public static byte[] miniatura(byte[] jpeg) {
-        return ridimensiona(new ByteArrayInputStream(jpeg), 120);
     }
 
     /**

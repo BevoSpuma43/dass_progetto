@@ -239,11 +239,18 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Tipo di documento non valido (DOCUMENTO_NON_VALIDO). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
@@ -254,6 +261,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo inesistente (PROFILO_ASSENTE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
                 }
               }
             }
@@ -277,19 +314,6 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Errore"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Profilo inesistente (PROFILO_ASSENTE). Cifrato."
           }
         }
       }
@@ -351,11 +375,18 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Identificativo non valido (DOCUMENTO_NON_VALIDO). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
@@ -366,6 +397,36 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo inesistente, oppure documento assente o di un altro profilo (PROFILO_ASSENTE, DOCUMENTO_ASSENTE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
                 }
               }
             }
@@ -389,19 +450,6 @@
                 }
               }
             }
-          },
-          "403": {
-            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Errore"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Documento inesistente o di un altro profilo (DOCUMENTO_ASSENTE). Cifrato."
           }
         }
       },
@@ -472,37 +520,24 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Tipo, revisione, IV o testo cifrato non validi, oppure cambio di tipo (DOCUMENTO_NON_VALIDO). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
           },
           "401": {
             "description": "Scambio di chiavi assente o scaduto (SCAMBIO_ASSENTE, SCAMBIO_SCADUTO). In chiaro.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Errore"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Errore"
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
             "content": {
               "application/json": {
                 "schema": {
@@ -521,8 +556,69 @@
               }
             }
           },
+          "404": {
+            "description": "Profilo inesistente, oppure revisione attesa maggiore di 0 per un documento assente (PROFILO_ASSENTE, DOCUMENTO_ASSENTE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro. Oppure: Revisione superata o id già usato (REVISIONE_SUPERATA, DOCUMENTO_ESISTENTE). Cifrato.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "413": {
-            "description": "Testo cifrato oltre 8 MiB (DOCUMENTO_GRANDE). Cifrato."
+            "description": "Corpo cifrato oltre 16 MiB (CORPO_GRANDE). In chiaro. Oppure: Testo cifrato oltre 8 MiB (DOCUMENTO_GRANDE). Cifrato.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
           }
         }
       },
@@ -571,7 +667,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Esito dell'eliminazione. Viaggia cifrato: lo schema in chiaro è Eliminazione.",
+            "description": "Esito dell'eliminazione: false se il documento era già assente. Viaggia cifrato: lo schema in chiaro è Eliminazione.",
             "headers": {
               "X-DASS-Cifrato": {
                 "schema": {
@@ -591,11 +687,18 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Revisione o identificativo non validi (REVISIONE_NON_VALIDA, DOCUMENTO_NON_VALIDO). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
@@ -610,28 +713,55 @@
               }
             }
           },
-          "409": {
-            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro.",
+          "403": {
+            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo inesistente (PROFILO_ASSENTE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Nonce già usato: la richiesta è una ripetizione (BUSTA_RIPETUTA). In chiaro. Oppure: Revisione superata (REVISIONE_SUPERATA). Cifrato.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
           },
           "429": {
             "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Errore"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Scambio di un altro profilo (SCAMBIO_DI_ALTRO_PROFILO). In chiaro.",
             "content": {
               "application/json": {
                 "schema": {
@@ -690,11 +820,18 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Consenso mancante, foto assente o non in Base64, descrizione oltre 500 caratteri (CONSENSO_MANCANTE, FOTO_ASSENTE, FOTO_ILLEGGIBILE, CAPTION_LUNGA). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
@@ -719,21 +856,119 @@
               }
             }
           },
-          "429": {
-            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro.",
+          "413": {
+            "description": "Corpo cifrato oltre 16 MiB (CORPO_GRANDE). In chiaro. Oppure: Foto oltre 5 MiB o risoluzione eccessiva (UPLOAD_GRANDE, FOTO_GRANDE). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
           },
-          "413": {
-            "description": "Foto oltre 5 MiB (UPLOAD_GRANDE). Cifrato."
+          "415": {
+            "description": "Immagine non leggibile come JPEG o PNG (FOTO_ILLEGGIBILE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Troppe richieste per lo stesso scambio (SCAMBIO_ESAURITO). In chiaro. Oppure: Limite dell'API Anthropic raggiunto (LIMITE_API). Cifrato.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Anthropic ha rifiutato credenziali, modello o richiesta, oppure la risposta è illeggibile (ACCESSO_NEGATO, MODELLO_ASSENTE, RICHIESTA_RIFIUTATA, RISPOSTA_NON_VALIDA). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
           },
           "503": {
-            "description": "Claude non disponibile o chiave non configurata (CHIAVE_ASSENTE, FORNITORE_INDISPONIBILE, RETE). Cifrato."
+            "description": "Chiave non configurata, servizio indisponibile, rete assente o richiesta interrotta (CHIAVE_ASSENTE, FORNITORE_INDISPONIBILE, RETE, INTERROTTA). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
+          },
+          "504": {
+            "description": "Claude non ha risposto entro il tempo previsto (TIMEOUT). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
+                }
+              }
+            }
           }
         }
       }
@@ -885,11 +1120,18 @@
             }
           },
           "400": {
-            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro.",
+            "description": "Busta assente, illeggibile, scaduta o che descrive un'altra richiesta (BUSTA_ASSENTE, BUSTA_NON_VALIDA, BUSTA_NON_CORRISPONDENTE, BUSTA_SCADUTA, CORPO_NON_VALIDO). In chiaro. Oppure: Identificativo non valido (DOCUMENTO_NON_VALIDO). Cifrato.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Errore"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/Errore"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BustaCifrata"
+                    }
+                  ]
                 }
               }
             }
@@ -900,6 +1142,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Errore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Profilo o documento inesistente (PROFILO_ASSENTE, DOCUMENTO_ASSENTE). Cifrato.",
+            "headers": {
+              "X-DASS-Cifrato": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "1"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BustaCifrata"
                 }
               }
             }

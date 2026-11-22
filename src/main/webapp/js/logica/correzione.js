@@ -1,6 +1,6 @@
 /**
- * Valida le righe inviate dall'editor e prepara i dati usati da salvataggio, anteprima e registrazione.
- * Porting di it.unisi.dass.analisi.CorrezioneBozza.
+ * Valida le righe dell'editor e prepara i dati usati da salvataggio, calcolo e registrazione.
+ * La validazione avviene nel browser: Payara riceve soltanto la bozza cifrata.
  */
 import {ErroreAnalisi} from "./errore.js";
 import {suggerisci} from "./abbinamento.js";

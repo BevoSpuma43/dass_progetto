@@ -15,7 +15,7 @@ import java.util.Base64;
  */
 public final class ClaudeClient {
     public static final String MODELLO_PREDEFINITO = "claude-sonnet-5-5";
-    /** Ripete su Claude Sonnet 5 le richieste che i classificatori di sicurezza rifiutano. */
+    /** Beta del fallback lato server: una richiesta rifiutata dai classificatori può essere ripetuta con un altro modello. */
     static final String BETA_FALLBACK = "server-side-fallback-2026-07-01";
     private static final URI MESSAGES = URI.create("https://api.anthropic.com/v1/messages");
     private static final Duration TIMEOUT = Duration.ofSeconds(180);
