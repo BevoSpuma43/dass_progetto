@@ -1674,6 +1674,10 @@
             "type": "string",
             "nullable": true,
             "description": "Id della scheda del catalogo scelta da Claude, oppure null."
+          },
+          "schedaApprossimata": {
+            "type": "boolean",
+            "description": "true se il catalogo non ha l'alimento e la scheda è la più simile scelta da Claude."
           }
         }
       },

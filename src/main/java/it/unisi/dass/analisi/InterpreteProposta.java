@@ -29,8 +29,8 @@ public final class InterpreteProposta {
 
     /**
      * Estrae la proposta dall'output strutturato (o dal vecchio strumento proponi_ingredienti) e
-     * normalizza righe, grammi, provenienza, citazioni e scheda del catalogo scelta da Claude. Segnala i
-     * dati che l'utente deve verificare.
+     * normalizza righe, grammi, provenienza, citazioni e scheda del catalogo scelta da Claude, esatta o
+     * approssimata. Esclude le righe trascurabili e segnala i dati che l'utente deve verificare.
      */
     static JsonObject interpreta(String risposta, boolean conCaption, Map<String, String> fonti, String modelloRichiesto,
                                  ElencoCatalogo catalogo) {
@@ -50,10 +50,23 @@ public final class InterpreteProposta {
         var correzioni = new ArrayList<String>();
         var ingredienti = Json.createArrayBuilder();
         int righe = 0;
+        int esaminate = 0;
+        int trascurabili = 0;
+        boolean troppe = false;
         boolean senzaNome = false;
         boolean fontiNonCitate = false;
         var lista = proposta.getJsonArray("ingredienti");
-        for (int indice = 0; indice < Math.min(lista.size(), MASSIMO_RIGHE); indice++) {
+        for (int indice = 0; indice < lista.size(); indice++) {
+            // Erbe aromatiche, spezie, sale, pepe e acqua non apportano macronutrienti rilevanti: la riga non
+            // arriva all'editor e non conta nel limite delle righe.
+            if (lista.get(indice) instanceof JsonObject o && vero(o.get("trascurabile"))) {
+                trascurabili++;
+                continue;
+            }
+            if (esaminate++ == MASSIMO_RIGHE) {
+                troppe = true;
+                break;
+            }
             String nome = lista.get(indice) instanceof JsonObject o ? testo(o.get("nome")) : null;
             if (nome == null) {
                 senzaNome = true;
@@ -84,7 +97,8 @@ public final class InterpreteProposta {
                     correzioni.add(nome + ": ricetta non citata dalla ricerca " + i.get("fonteUrl"));
                 }
             }
-            // La scheda scelta da Claude arriva come numero dell'elenco: si tiene solo se esiste.
+            // La scheda scelta da Claude arriva come numero dell'elenco: si tiene solo se esiste. Se il catalogo
+            // non ha l'alimento, Claude può indicare la scheda più simile e la segnala come approssimata.
             String voce = null;
             if (i.get("voceCatalogo") instanceof JsonNumber numero && numero.isIntegral()) {
                 voce = catalogo.id(numero.longValue());
@@ -96,6 +110,7 @@ public final class InterpreteProposta {
             riga.add("origineQuantita", origine);
             if (voce == null) riga.addNull("voceCatalogoId");
             else riga.add("voceCatalogoId", voce);
+            riga.add("schedaApprossimata", voce != null && vero(i.get("schedaApprossimata")));
             if (url != null) riga.add("fonteUrl", url).add("fonteTitolo", fonti.get(url));
             String motivazione = testo(i.get("motivazione"));
             if (motivazione != null) riga.add("motivazione", motivazione);
@@ -114,7 +129,7 @@ public final class InterpreteProposta {
                 }
             }
         }
-        if (lista.size() > MASSIMO_RIGHE) domande.add("Claude ha proposto più di 30 ingredienti: sono mostrati i primi 30.");
+        if (troppe) domande.add("Claude ha proposto più di 30 ingredienti: sono mostrati i primi 30.");
         if (senzaNome) domande.add("Un ingrediente non ha un nome riconoscibile. Verifica la foto e aggiungilo manualmente.");
         if (fontiNonCitate)
             domande.add("Per alcune righe Claude ha indicato una ricetta che la ricerca non ha restituito: quei pesi sono trattati come stime da verificare.");
@@ -122,8 +137,12 @@ public final class InterpreteProposta {
             domande.add("Ricerca senza fonti utilizzabili. Le stime si basano sulla foto o su porzioni tipiche.");
         var dubbiFinali = domande.build();
         if (righe == 0 && dubbiFinali.isEmpty())
-            dubbiFinali = Json.createArrayBuilder().add("Claude non ha riconosciuto ingredienti nella foto. Puoi compilare la bozza a mano.").build();
+            dubbiFinali = Json.createArrayBuilder().add(trascurabili > 0
+                    ? "Claude ha riconosciuto solo erbe, spezie, sale o acqua, che non apportano macronutrienti rilevanti. Puoi compilare la bozza a mano."
+                    : "Claude non ha riconosciuto ingredienti nella foto. Puoi compilare la bozza a mano.").build();
         if (!correzioni.isEmpty()) LOG.info("Proposta di Claude corretta prima dell'editor: " + correzioni);
+        // Nel log solo il numero: i nomi degli alimenti restano fuori dai file del server.
+        if (trascurabili > 0) LOG.info("Righe senza macronutrienti rilevanti escluse dalla proposta: " + trascurabili + ".");
         String modello = testo(envelope.get("model"));
         return Json.createObjectBuilder().add("modello", modello == null ? modelloRichiesto : modello)
                 .add("statoAnalisi", "da_confermare").add("ingredienti", ingredienti).add("dubbi", dubbiFinali).build();
@@ -157,6 +176,11 @@ public final class InterpreteProposta {
         }
         if (proposta == null || !(proposta.get("ingredienti") instanceof JsonArray)) throw scartata("elenco degli ingredienti assente");
         return proposta;
+    }
+
+    /** Vero solo per il letterale JSON true: un campo assente o di altro tipo vale false. */
+    private static boolean vero(JsonValue valore) {
+        return valore != null && valore.getValueType() == JsonValue.ValueType.TRUE;
     }
 
     /** Valore testuale tra quelli ammessi, altrimenti il predefinito. */

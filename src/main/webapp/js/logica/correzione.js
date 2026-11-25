@@ -52,9 +52,10 @@ export function prepara(righe, precedenti, catalogo) {
     };
     if (manuale) aggiornata.sceltaCatalogoManuale = true;
     if (nota) aggiornata.notaAbbinamento = nota.notaAbbinamento;
-    // Finché l'utente non cambia scheda, resta indicato che l'ha scelta Claude.
+    // Finché l'utente non cambia scheda, resta indicato che l'ha scelta Claude, esatta o più simile.
     if (!manuale && voce && vecchia?.origineAbbinamento && riferimento === (vecchia.voceCatalogoId ?? null)) {
       aggiornata.origineAbbinamento = vecchia.origineAbbinamento;
+      if (vecchia.schedaApprossimata === true) aggiornata.schedaApprossimata = true;
     }
     if (vecchia && origine !== "corretta" && nome === vecchia.nome && stato === vecchia.stato &&
         origine === vecchia.origineQuantita) {

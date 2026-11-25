@@ -22,7 +22,11 @@ public final class ElencoCatalogo {
               catalogo ha solo la scheda cruda o secca, converti i grammi con una resa tipica e scrivi la conversione in motivazione.
             - Tra varianti equivalenti scegli la più comune in Italia e segnala nei dubbi una scelta incerta.
             - Preferisci le schede CREA e USDA alle schede sintetiche quando descrivono lo stesso alimento.
-            - Se nessuna scheda corrisponde all'alimento, usa null: non forzare l'abbinamento.
+            - Se nessuna scheda descrive l'alimento, scegli la più simile per carboidrati, proteine e grassi (per esempio la
+              pancetta per il guanciale, un olio di semi per l'olio di semi vari) e imposta
+              schedaApprossimata a true, scrivendo in motivazione quale scheda hai usato al posto dell'alimento e perché.
+              Con la scheda dello stesso alimento schedaApprossimata è false.
+            - Usa null solo se nessuna scheda è ragionevolmente simile per composizione.
             """;
     private final String testo;
     private final List<String> id;

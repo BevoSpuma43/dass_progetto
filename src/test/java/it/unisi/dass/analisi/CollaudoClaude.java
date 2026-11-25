@@ -60,18 +60,32 @@ public class CollaudoClaude {
             invii.add(corpo(req));
             return new ClaudeClient.Esito(200, invii.size() == 1 ? RICERCA : strutturata("""
                     {"ingredienti":[
-                     {"nome":"Fusilli","quantitaG":80,"stato":"crudo","origineQuantita":"stimata","motivazione":"Porzione tipica.","fonteUrl":"","voceCatalogo":3},
-                     {"nome":"Sugo","quantitaG":90,"stato":"cotto","origineQuantita":"stimata","motivazione":"Stima.","fonteUrl":"","voceCatalogo":99},
-                     {"nome":"Basilico","quantitaG":1,"stato":"crudo","origineQuantita":"stimata","motivazione":"Foglie.","fonteUrl":"","voceCatalogo":null}],
+                     {"nome":"Fusilli","quantitaG":80,"stato":"crudo","origineQuantita":"stimata","motivazione":"Porzione tipica.","fonteUrl":"","voceCatalogo":3,"schedaApprossimata":false,"trascurabile":false},
+                     {"nome":"Sugo","quantitaG":90,"stato":"cotto","origineQuantita":"stimata","motivazione":"Stima.","fonteUrl":"","voceCatalogo":99,"schedaApprossimata":true,"trascurabile":false},
+                     {"nome":"Basilico","quantitaG":1,"stato":"crudo","origineQuantita":"stimata","motivazione":"Foglie.","fonteUrl":"","voceCatalogo":null,"schedaApprossimata":false,"trascurabile":true},
+                     {"nome":"Gnocchi di zucca","quantitaG":150,"stato":"cotto","origineQuantita":"stimata","motivazione":"Scheda più simile.","fonteUrl":"","voceCatalogo":1,"schedaApprossimata":true,"trascurabile":false},
+                     {"nome":"Peperoncino fresco","quantitaG":5,"stato":"crudo","origineQuantita":"stimata","motivazione":"Guarnizione.","fonteUrl":"","voceCatalogo":null,"schedaApprossimata":false,"trascurabile":false}],
                      "dubbi":[]}
                     """));
         }).analizza(jpeg, CAPTION, elenco);
         verifica(invii.get(0).get("system") instanceof JsonString, "la ricerca non riceve il catalogo");
         verifica(invii.get(1).getJsonArray("system").size() == 2, "la proposta riceve il catalogo");
         var righe = esito.getJsonArray("ingredienti");
-        verifica(righe.getJsonObject(0).getString("voceCatalogoId").equals("usda-fdc-1-2026-10-29"), "scheda scelta da Claude");
-        verifica(righe.getJsonObject(1).isNull("voceCatalogoId"), "numero inesistente scartato");
-        verifica(righe.getJsonObject(2).isNull("voceCatalogoId"), "nessuna scheda adatta");
+        verifica(righe.size() == 4 && !righe.toString().contains("Basilico"), "riga trascurabile esclusa");
+        verifica(righe.getJsonObject(0).getString("voceCatalogoId").equals("usda-fdc-1-2026-10-29")
+                && !righe.getJsonObject(0).getBoolean("schedaApprossimata"), "scheda scelta da Claude");
+        verifica(righe.getJsonObject(1).isNull("voceCatalogoId") && !righe.getJsonObject(1).getBoolean("schedaApprossimata"),
+                "numero inesistente scartato");
+        verifica(righe.getJsonObject(2).getString("voceCatalogoId").equals("pasta-cotta-v1")
+                && righe.getJsonObject(2).getBoolean("schedaApprossimata"), "scheda più simile segnalata");
+        verifica(righe.getJsonObject(3).isNull("voceCatalogoId"), "nessuna scheda adatta");
+
+        var soloErbe = InterpreteProposta.interpreta(strutturata("""
+                {"ingredienti":[{"nome":"Sale","quantitaG":1,"stato":"non_noto","origineQuantita":"stimata","motivazione":"Pizzico.","fonteUrl":"","voceCatalogo":null,"schedaApprossimata":false,"trascurabile":true}],
+                 "dubbi":[]}
+                """), false);
+        verifica(soloErbe.getJsonArray("ingredienti").isEmpty()
+                && soloErbe.getJsonArray("dubbi").getString(0).startsWith("Claude ha riconosciuto solo erbe"), "proposta con sole righe trascurabili");
     }
 
     /** Il log riassume ricerche, errori dello strumento e fonti, e riporta il motivo di un rifiuto di Anthropic. */
@@ -129,6 +143,9 @@ public class CollaudoClaude {
         verifica(config.getString("effort").equals("medium"), "effort della proposta");
         verifica(config.getJsonObject("format").getString("type").equals("json_schema"), "output strutturato");
         verifica(!config.getJsonObject("format").toString().contains("maxLength"), "schema senza vincoli non supportati");
+        var obbligatori = config.getJsonObject("format").getJsonObject("schema").getJsonObject("properties").getJsonObject("ingredienti")
+                .getJsonObject("items").getJsonArray("required").getValuesAs(JsonString::getString);
+        verifica(obbligatori.containsAll(List.of("voceCatalogo", "schedaApprossimata", "trascurabile")), "scheda, approssimazione e righe trascurabili nello schema");
         verifica(richiesta.getString("fallbacks").equals("default"), "fallback lato server");
         verifica(richiesta.getInt("max_tokens") >= 16000, "token sufficienti per pensiero e risposta");
         verifica(!richiesta.toString().contains("segreto-fittizio"), "la chiave non entra nel corpo");

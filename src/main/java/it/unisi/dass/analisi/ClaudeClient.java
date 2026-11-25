@@ -24,6 +24,9 @@ public final class ClaudeClient {
     private static final JsonObject SCHEMA = caricaSchema();
     private static final String ISTRUZIONI = """
             Proponi in italiano una riga per ogni ingrediente del piatto servito, compresi condimenti e guarnizioni.
+            Imposta trascurabile a true per erbe aromatiche fresche o secche, spezie, sale, pepe e acqua: non apportano
+            carboidrati, proteine o grassi rilevanti e DASS non mostra quelle righe. Olio, burro, formaggi, zucchero,
+            miele, salse, frutta secca, verdura e frutta non sono mai trascurabili.
             Calcola una stima numerica in grammi PER UNA PORZIONE per ciascuno, anche se il catalogo è sconosciuto.
             Ripartisci le dosi delle ricette per il numero di persone e adatta alla porzione in foto o descritta.
             Per i pesi ricavati da una ricetta indica origine ricetta e il suo esatto URL dagli appunti.
@@ -37,7 +40,7 @@ public final class ClaudeClient {
             Se la base dei grammi è incerta, usa non_noto.
             Mantieni ogni peso dichiarato per il suo ingrediente e la sua preparazione, con origine caption.
             Se le fonti non coprono una riga usa una stima visiva o di porzione tipica con origine stimata,
-            spiegando l'assunzione, anche per olio, erbe o guarnizioni. Segnala gli ingredienti solo ipotizzati.
+            spiegando l'assunzione, anche per olio o guarnizioni. Segnala gli ingredienti solo ipotizzati.
             Scomponi i condimenti composti quando possibile, evita doppi conteggi. Usa null solo se nessuna
             base ragionevole è disponibile per quella riga e spiegane il motivo. Non inventare fonti.
             Se la foto non mostra cibo lascia ingredienti vuoti e spiega il dubbio.

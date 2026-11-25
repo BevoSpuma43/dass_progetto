@@ -142,7 +142,8 @@ export function collega(proposta, catalogo, caption) {
   const ingredienti = righe.map(riga => {
     // La scheda scelta da Claude vale se esiste nel catalogo; altrimenti si cerca per nome.
     const scelta = typeof riga.voceCatalogoId === "string" ? voci.get(riga.voceCatalogoId) : undefined;
-    const base = scelta ? sceltaDiClaude(riga, scelta) : suggerisci({...riga, voceCatalogoId: null}, catalogo);
+    const base = scelta ? sceltaDiClaude(riga, scelta)
+      : suggerisci({...riga, voceCatalogoId: null, schedaApprossimata: false}, catalogo);
     const r = {...base, unita: "g", rigaId: crypto.randomUUID()};
     if (riga.origineQuantita === "caption" && !pesoAttribuibile(caption, riga, righe)) {
       r.quantitaG = null;
@@ -155,17 +156,25 @@ export function collega(proposta, catalogo, caption) {
 }
 
 /**
- * Riga con la scheda scelta da Claude. Se la scheda è cruda e i grammi sono indicati come cotti, o
- * viceversa, il valore nutrizionale non sarebbe coerente: la riga resta da verificare.
+ * Riga con la scheda scelta da Claude. La riga resta da verificare se il catalogo non ha l'alimento e
+ * Claude ha indicato la scheda più simile, oppure se la scheda è cruda e i grammi sono indicati come
+ * cotti, o viceversa, perché il valore nutrizionale non sarebbe coerente.
  */
 function sceltaDiClaude(riga, voce) {
-  const esito = {...riga, voceCatalogoId: voce.id, statoAbbinamento: "abbinato", origineAbbinamento: "claude"};
+  const esito = {...riga, voceCatalogoId: voce.id, statoAbbinamento: "abbinato", origineAbbinamento: "claude",
+    schedaApprossimata: riga.schedaApprossimata === true};
   delete esito.notaAbbinamento;
+  const note = [];
+  if (esito.schedaApprossimata) {
+    note.push("Nel catalogo manca «" + riga.nome + "»: Claude ha usato la scheda più simile, «" + voce.nome +
+      "». Verifica che vada bene o scegli un’altra scheda.");
+  }
   const stato = typeof riga.stato === "string" ? riga.stato : "non_noto";
   if (voce.preparazione !== "non_noto" && stato !== "non_noto" && stato !== voce.preparazione) {
-    esito.notaAbbinamento = "La scheda si riferisce all’alimento " + voce.preparazione +
-      " ma i grammi sono indicati come " + stato + ": verifica il peso o scegli un’altra scheda.";
+    note.push("La scheda si riferisce all’alimento " + voce.preparazione +
+      " ma i grammi sono indicati come " + stato + ": verifica il peso o scegli un’altra scheda.");
   }
+  if (note.length > 0) esito.notaAbbinamento = note.join(" ");
   return esito;
 }
 

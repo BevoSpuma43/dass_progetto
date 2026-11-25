@@ -38,9 +38,18 @@
               {"type": "null"}
             ],
             "description": "Numero della scheda del catalogo che descrive l'alimento nella preparazione dei grammi, oppure null."
+          },
+          "schedaApprossimata": {
+            "type": "boolean",
+            "description": "true se voceCatalogo è la scheda più simile e non quella dello stesso alimento."
+          },
+          "trascurabile": {
+            "type": "boolean",
+            "description": "true per erbe aromatiche, spezie, sale, pepe e acqua, che non apportano macronutrienti rilevanti: la riga non viene mostrata."
           }
         },
-        "required": ["nome", "quantitaG", "stato", "origineQuantita", "motivazione", "fonteUrl", "voceCatalogo"],
+        "required": ["nome", "quantitaG", "stato", "origineQuantita", "motivazione", "fonteUrl", "voceCatalogo",
+          "schedaApprossimata", "trascurabile"],
         "additionalProperties": false
       }
     },
