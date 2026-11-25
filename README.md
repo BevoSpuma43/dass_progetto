@@ -8,7 +8,7 @@
 
 1. **Imposta i parametri.** Nella Home scegli il profilo (`utente1` o `utente2`) e inserisci ICR, ISF e glicemia obiettivo (predefinita 120 mg/dL).
 2. **Carica un piatto.** Scegli un JPEG o PNG fino a 5 MiB, aggiungi una descrizione facoltativa, la glicemia attuale e quella obiettivo, e dai il consenso all’invio di foto e descrizione per l’analisi.
-3. **Controlla la proposta.** Claude Sonnet 5.5 suggerisce gli ingredienti e stima i grammi della porzione, anche cercando ricette online. Per ogni ingrediente Claude sceglie anche la scheda del catalogo nutrizionale; puoi correggere nomi, quantità e schede.
+3. **Controlla la proposta.** Claude Sonnet 5.5 suggerisce gli ingredienti e stima i grammi della porzione, anche cercando ricette online. Per ogni ingrediente Claude sceglie anche la scheda del catalogo nutrizionale, o la più simile se l'alimento manca, e segnala quella approssimata da verificare; erbe aromatiche, spezie, sale e acqua, che non apportano macronutrienti rilevanti, non compaiono. Puoi correggere nomi, quantità e schede.
 4. **Calcola e registra.** Il browser calcola carboidrati, proteine, grassi, energia e il bolo con la formula
 
    ```text
@@ -65,7 +65,7 @@ flowchart LR
 | Frontend | Pagine, stili e moduli JavaScript in [`src/main/webapp/`](src/main/webapp/). Crittografia in [`js/sicurezza/`](src/main/webapp/js/sicurezza/), logica del diario in [`js/logica/`](src/main/webapp/js/logica/) |
 | Backend | Java 21 e Jakarta EE 10 in [`src/main/java/it/unisi/dass/`](src/main/java/it/unisi/dass/): `api`, `sicurezza`, `persistenza`, `analisi` |
 | Persistenza | Jakarta Persistence con EclipseLink e H2. Archivio predefinito `var/dati/dass.mv.db` |
-| Catalogo | 465 schede in italiano da USDA (Foundation Foods e SR Legacy) e CREA, con i carboidrati disponibili (fibra esclusa) usati per il bolo. File [`catalogo_nutrizionale_it.json`](macros_tables/catalogo_nutrizionale_it.json) |
+| Catalogo | 505 schede in italiano da USDA (Foundation Foods e SR Legacy) e CREA, con i carboidrati disponibili (fibra esclusa) usati per il bolo. File [`catalogo_nutrizionale_it.json`](macros_tables/catalogo_nutrizionale_it.json) |
 | API | Contratto [OpenAPI](src/main/webapp/openapi.json), consultabile in [Swagger UI](http://127.0.0.1:8080/dass/swagger.html) a server avviato |
 
 ## Avvio locale
