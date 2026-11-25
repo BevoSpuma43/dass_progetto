@@ -33,7 +33,8 @@ export function prepara(righe, precedenti, catalogo) {
     const manuale = r.sceltaCatalogoManuale === true || vecchia?.sceltaCatalogoManuale === true ||
       (proposta !== null && riferimento !== (proposta.voceCatalogoId ?? null));
     const nota = !manuale && proposta && "notaAbbinamento" in proposta ? proposta : null;
-    let stato = voce ? voce.preparazione : (typeof r.stato === "string" ? r.stato : "non_noto");
+    // Una scheda con preparazione non nota non cancella lo stato già indicato per i grammi.
+    let stato = voce && voce.preparazione !== "non_noto" ? voce.preparazione : (typeof r.stato === "string" ? r.stato : "non_noto");
     if (nota) stato = nota.stato;
     if (!STATI.has(stato)) throw invalida();
     let origine = peso === null ? "da_chiarire" : "corretta";
@@ -51,6 +52,10 @@ export function prepara(righe, precedenti, catalogo) {
     };
     if (manuale) aggiornata.sceltaCatalogoManuale = true;
     if (nota) aggiornata.notaAbbinamento = nota.notaAbbinamento;
+    // Finché l'utente non cambia scheda, resta indicato che l'ha scelta Claude.
+    if (!manuale && voce && vecchia?.origineAbbinamento && riferimento === (vecchia.voceCatalogoId ?? null)) {
+      aggiornata.origineAbbinamento = vecchia.origineAbbinamento;
+    }
     if (vecchia && origine !== "corretta" && nome === vecchia.nome && stato === vecchia.stato &&
         origine === vecchia.origineQuantita) {
       for (const k of ["motivazione", "fonteUrl", "fonteTitolo"]) if (k in vecchia) aggiornata[k] = vecchia[k];

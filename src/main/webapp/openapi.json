@@ -1669,6 +1669,11 @@
           },
           "fonteTitolo": {
             "type": "string"
+          },
+          "voceCatalogoId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Id della scheda del catalogo scelta da Claude, oppure null."
           }
         }
       },

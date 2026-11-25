@@ -28,7 +28,50 @@ public class CollaudoClaude {
         verificaCorrezioni(jpeg);
         verificaErrori(jpeg);
         verificaDiagnostica();
+        verificaCatalogo(jpeg);
         System.out.println("OK: foto, richieste per Sonnet 5.5, ricerca, output strutturato, correzioni delle righe, errori e diagnostica.");
+    }
+
+    /** Claude riceve il catalogo numerato e sceglie la scheda; il server tiene solo numeri esistenti. */
+    private static void verificaCatalogo(byte[] jpeg) {
+        JsonArray voci;
+        try (var reader = Json.createReader(new StringReader("""
+                [{"id":"pasta-cotta-v1","nome":"Pasta di semola","preparazione":"cotto","fonte":"CREA, Pasta di semola cotta"},
+                 {"id":"pasta-v1","nome":"Pasta","preparazione":"crudo","fonte":"DASS, valori sintetici per 100 g"},
+                 {"id":"usda-fdc-1-2026-10-29","nome":"Spaghetti secchi","preparazione":"non_noto","fonte":"USDA FoodData Central"}]
+                """))) {
+            voci = reader.readArray();
+        }
+        var elenco = ElencoCatalogo.da(voci);
+        verifica(elenco.testo().contains("1 | Pasta di semola | cotto | CREA\n2 | Pasta | crudo | sintetica\n3 | Spaghetti secchi | non_noto | USDA"),
+                "elenco numerato con preparazione e fonte");
+        verifica(elenco.id(3).equals("usda-fdc-1-2026-10-29") && elenco.id(0) == null && elenco.id(4) == null, "numeri ricondotti agli id");
+        verifica(ElencoCatalogo.da(Json.createArrayBuilder().build()).vuoto(), "catalogo vuoto");
+
+        var client = new ClaudeClient("k", null, req -> { throw new AssertionError("nessun invio"); });
+        var sistema = client.payload(jpeg, CAPTION, elenco).getJsonArray("system");
+        verifica(sistema.size() == 2 && sistema.getJsonObject(0).getString("text").contains("Proponi in italiano"), "istruzioni nel primo blocco");
+        verifica(sistema.getJsonObject(1).getJsonObject("cache_control").getString("type").equals("ephemeral")
+                && sistema.getJsonObject(1).getString("text").contains("2 | Pasta | crudo | sintetica"), "catalogo in cache nel secondo blocco");
+        verifica(client.payload(jpeg, CAPTION).get("system") instanceof JsonString, "senza catalogo il sistema resta un testo");
+
+        var invii = new ArrayList<JsonObject>();
+        var esito = new ClaudeClient("k", null, req -> {
+            invii.add(corpo(req));
+            return new ClaudeClient.Esito(200, invii.size() == 1 ? RICERCA : strutturata("""
+                    {"ingredienti":[
+                     {"nome":"Fusilli","quantitaG":80,"stato":"crudo","origineQuantita":"stimata","motivazione":"Porzione tipica.","fonteUrl":"","voceCatalogo":3},
+                     {"nome":"Sugo","quantitaG":90,"stato":"cotto","origineQuantita":"stimata","motivazione":"Stima.","fonteUrl":"","voceCatalogo":99},
+                     {"nome":"Basilico","quantitaG":1,"stato":"crudo","origineQuantita":"stimata","motivazione":"Foglie.","fonteUrl":"","voceCatalogo":null}],
+                     "dubbi":[]}
+                    """));
+        }).analizza(jpeg, CAPTION, elenco);
+        verifica(invii.get(0).get("system") instanceof JsonString, "la ricerca non riceve il catalogo");
+        verifica(invii.get(1).getJsonArray("system").size() == 2, "la proposta riceve il catalogo");
+        var righe = esito.getJsonArray("ingredienti");
+        verifica(righe.getJsonObject(0).getString("voceCatalogoId").equals("usda-fdc-1-2026-10-29"), "scheda scelta da Claude");
+        verifica(righe.getJsonObject(1).isNull("voceCatalogoId"), "numero inesistente scartato");
+        verifica(righe.getJsonObject(2).isNull("voceCatalogoId"), "nessuna scheda adatta");
     }
 
     /** Il log riassume ricerche, errori dello strumento e fonti, e riporta il motivo di un rifiuto di Anthropic. */

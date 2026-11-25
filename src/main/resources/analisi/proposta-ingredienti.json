@@ -31,9 +31,16 @@
           "origineQuantita": {
             "type": "string",
             "enum": ["caption", "ricetta", "stimata", "da_chiarire"]
+          },
+          "voceCatalogo": {
+            "anyOf": [
+              {"type": "integer"},
+              {"type": "null"}
+            ],
+            "description": "Numero della scheda del catalogo che descrive l'alimento nella preparazione dei grammi, oppure null."
           }
         },
-        "required": ["nome", "quantitaG", "stato", "origineQuantita", "motivazione", "fonteUrl"],
+        "required": ["nome", "quantitaG", "stato", "origineQuantita", "motivazione", "fonteUrl", "voceCatalogo"],
         "additionalProperties": false
       }
     },

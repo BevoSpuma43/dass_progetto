@@ -138,8 +138,12 @@ function notaVariante(originale) {
  */
 export function collega(proposta, catalogo, caption) {
   const righe = proposta.ingredienti;
+  const voci = new Map(catalogo.map(v => [v.id, v]));
   const ingredienti = righe.map(riga => {
-    const r = {...suggerisci(riga, catalogo), unita: "g", rigaId: crypto.randomUUID()};
+    // La scheda scelta da Claude vale se esiste nel catalogo; altrimenti si cerca per nome.
+    const scelta = typeof riga.voceCatalogoId === "string" ? voci.get(riga.voceCatalogoId) : undefined;
+    const base = scelta ? sceltaDiClaude(riga, scelta) : suggerisci({...riga, voceCatalogoId: null}, catalogo);
+    const r = {...base, unita: "g", rigaId: crypto.randomUUID()};
     if (riga.origineQuantita === "caption" && !pesoAttribuibile(caption, riga, righe)) {
       r.quantitaG = null;
       r.origineQuantita = "da_chiarire";
@@ -148,6 +152,21 @@ export function collega(proposta, catalogo, caption) {
     return r;
   });
   return {...proposta, origineAnalisi: proposta.origineAnalisi ?? "claude", ingredienti};
+}
+
+/**
+ * Riga con la scheda scelta da Claude. Se la scheda è cruda e i grammi sono indicati come cotti, o
+ * viceversa, il valore nutrizionale non sarebbe coerente: la riga resta da verificare.
+ */
+function sceltaDiClaude(riga, voce) {
+  const esito = {...riga, voceCatalogoId: voce.id, statoAbbinamento: "abbinato", origineAbbinamento: "claude"};
+  delete esito.notaAbbinamento;
+  const stato = typeof riga.stato === "string" ? riga.stato : "non_noto";
+  if (voce.preparazione !== "non_noto" && stato !== "non_noto" && stato !== voce.preparazione) {
+    esito.notaAbbinamento = "La scheda si riferisce all’alimento " + voce.preparazione +
+      " ma i grammi sono indicati come " + stato + ": verifica il peso o scegli un’altra scheda.";
+  }
+  return esito;
 }
 
 /** Converte il numero letto nella descrizione in grammi senza errori di arrotondamento. */

@@ -22,16 +22,18 @@ public final class InterpreteProposta {
     /** Impedisce l'istanziazione di questa classe di utilità. */
     private InterpreteProposta() {}
 
-    /** Interpreta una risposta senza fonti di ricette ammesse, ad esempio nei collaudi. */
+    /** Interpreta una risposta senza fonti di ricette ammesse né catalogo, ad esempio nei collaudi. */
     public static JsonObject interpreta(String risposta, boolean conCaption) {
-        return interpreta(risposta, conCaption, Map.of(), "sconosciuto");
+        return interpreta(risposta, conCaption, Map.of(), "sconosciuto", ElencoCatalogo.VUOTO);
     }
 
     /**
      * Estrae la proposta dall'output strutturato (o dal vecchio strumento proponi_ingredienti) e
-     * normalizza righe, grammi, provenienza e citazioni. Segnala i dati che l'utente deve verificare.
+     * normalizza righe, grammi, provenienza, citazioni e scheda del catalogo scelta da Claude. Segnala i
+     * dati che l'utente deve verificare.
      */
-    static JsonObject interpreta(String risposta, boolean conCaption, Map<String, String> fonti, String modelloRichiesto) {
+    static JsonObject interpreta(String risposta, boolean conCaption, Map<String, String> fonti, String modelloRichiesto,
+                                 ElencoCatalogo catalogo) {
         JsonObject envelope;
         try (var reader = Json.createReader(new StringReader(risposta))) {
             envelope = reader.readObject();
@@ -82,10 +84,18 @@ public final class InterpreteProposta {
                     correzioni.add(nome + ": ricetta non citata dalla ricerca " + i.get("fonteUrl"));
                 }
             }
+            // La scheda scelta da Claude arriva come numero dell'elenco: si tiene solo se esiste.
+            String voce = null;
+            if (i.get("voceCatalogo") instanceof JsonNumber numero && numero.isIntegral()) {
+                voce = catalogo.id(numero.longValue());
+                if (voce == null) correzioni.add(nome + ": scheda del catalogo inesistente " + numero);
+            }
             var riga = Json.createObjectBuilder().add("nome", nome).add("stato", stato);
             if (grammi == null) riga.addNull("quantitaG");
             else riga.add("quantitaG", grammi);
             riga.add("origineQuantita", origine);
+            if (voce == null) riga.addNull("voceCatalogoId");
+            else riga.add("voceCatalogoId", voce);
             if (url != null) riga.add("fonteUrl", url).add("fonteTitolo", fonti.get(url));
             String motivazione = testo(i.get("motivazione"));
             if (motivazione != null) riga.add("motivazione", motivazione);

@@ -3,6 +3,8 @@ package it.unisi.dass.api;
 import it.unisi.dass.analisi.ClaudeClient;
 import it.unisi.dass.analisi.ErroreAnalisi;
 import it.unisi.dass.analisi.FotoPiatto;
+import it.unisi.dass.persistenza.ArchivioCatalogo;
+import jakarta.ejb.EJB;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
 import jakarta.ws.rs.*;
@@ -19,6 +21,9 @@ import java.util.Base64;
 @Path("/analisi-piatto")
 @Produces(MediaType.APPLICATION_JSON)
 public class AnalisiResource {
+    /** Catalogo pubblico: Claude sceglie per ogni ingrediente una di queste schede. */
+    @EJB
+    private ArchivioCatalogo catalogo;
 
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
@@ -37,7 +42,7 @@ public class AnalisiResource {
             String caption = richiesta.getString("caption", "").strip();
             if (caption.length() > 500) throw new ErroreAnalisi(400, "CAPTION_LUNGA", "Usa al massimo 500 caratteri per la descrizione.");
             byte[] jpeg = FotoPiatto.prepara(new ByteArrayInputStream(foto));
-            return Json.createObjectBuilder().add("proposta", new ClaudeClient().analizza(jpeg, caption)).build();
+            return Json.createObjectBuilder().add("proposta", new ClaudeClient().analizza(jpeg, caption, catalogo.catalogo(""))).build();
         }, Response.Status.OK);
     }
 }

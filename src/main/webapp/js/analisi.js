@@ -170,7 +170,8 @@ function riga(i = {}) {
   const origini = {caption: "Peso dalla descrizione", stimata: "Stima di Claude", ricetta: "Stima da ricetta",
     corretta: "Peso inserito manualmente", da_chiarire: "Peso da chiarire"};
   const nota = [origini[i.origineQuantita], i.stato === "non_noto" ? "Preparazione da chiarire" : i.stato,
-    i.statoAbbinamento === "sconosciuto" ? "Nessuna scheda associata" : i.statoAbbinamento === "da_chiarire" ? "Abbinamento da verificare" : ""];
+    i.statoAbbinamento === "sconosciuto" ? "Nessuna scheda associata" : i.statoAbbinamento === "da_chiarire" ? "Abbinamento da verificare"
+      : i.origineAbbinamento === "claude" ? "Scheda scelta da Claude." : ""];
   const provenienza = campo.querySelector(".provenienza");
   provenienza.textContent = nota.slice(0, 2).filter(Boolean).join(" · ");
   const spiegazione = campo.querySelector(".motivazione");

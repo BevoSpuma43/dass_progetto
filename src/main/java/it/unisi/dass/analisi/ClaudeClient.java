@@ -113,30 +113,52 @@ public final class ClaudeClient {
         return richiesta;
     }
 
+    JsonObject payload(byte[] jpeg, String caption) {
+        return payload(jpeg, caption, ElencoCatalogo.VUOTO);
+    }
+
     /**
      * Costruisce il corpo della richiesta finale con JPEG in Base64, eventuale descrizione e risposta
-     * vincolata allo schema degli ingredienti.
+     * vincolata allo schema degli ingredienti. Il catalogo, se presente, è un secondo blocco di sistema con
+     * cache: resta identico tra un'analisi e l'altra e viene riletto dalla cache dei prompt.
      */
-    JsonObject payload(byte[] jpeg, String caption) {
+    JsonObject payload(byte[] jpeg, String caption, ElencoCatalogo catalogo) {
         var sorgente = Json.createObjectBuilder().add("type", "base64").add("media_type", "image/jpeg")
                 .add("data", Base64.getEncoder().encodeToString(jpeg));
         var contenuto = Json.createArrayBuilder().add(Json.createObjectBuilder().add("type", "image").add("source", sorgente));
         if (!caption.isBlank()) contenuto.add(Json.createObjectBuilder().add("type", "text").add("text", caption));
         var formato = Json.createObjectBuilder().add("type", "json_schema").add("schema", SCHEMA).build();
-        return conOpzioni(Json.createObjectBuilder().add("model", modello).add("max_tokens", 16000)
-                .add("system", ISTRUZIONI)
-                .add("messages", Json.createArrayBuilder().add(Json.createObjectBuilder().add("role", "user").add("content", contenuto))),
-                "medium", formato).build();
+        var richiesta = Json.createObjectBuilder().add("model", modello).add("max_tokens", 16000);
+        if (catalogo.vuoto()) {
+            richiesta.add("system", ISTRUZIONI);
+        } else {
+            richiesta.add("system", Json.createArrayBuilder()
+                    .add(Json.createObjectBuilder().add("type", "text").add("text", ISTRUZIONI))
+                    .add(Json.createObjectBuilder().add("type", "text").add("text", catalogo.testo())
+                            .add("cache_control", Json.createObjectBuilder().add("type", "ephemeral"))));
+        }
+        return conOpzioni(richiesta.add("messages", Json.createArrayBuilder()
+                .add(Json.createObjectBuilder().add("role", "user").add("content", contenuto))), "medium", formato).build();
+    }
+
+    /** Analisi senza catalogo: Claude non sceglie schede e il browser le cerca per nome. */
+    public JsonObject analizza(byte[] jpeg, String caption) {
+        return analizza(jpeg, caption, ElencoCatalogo.VUOTO);
+    }
+
+    /** Analisi con le schede di GET /api/catalogo: per ogni ingrediente Claude indica la scheda. */
+    public JsonObject analizza(byte[] jpeg, String caption, JsonArray voci) {
+        return analizza(jpeg, caption, ElencoCatalogo.da(voci));
     }
 
     /**
      * Cerca ricette e raccoglie citazioni, poi chiede al modello la proposta strutturata. Se la ricerca
      * è rifiutata, tenta la proposta usando foto e descrizione.
      */
-    public JsonObject analizza(byte[] jpeg, String caption) {
+    JsonObject analizza(byte[] jpeg, String caption, ElencoCatalogo catalogo) {
         if (chiave == null || chiave.isBlank())
             throw new ErroreAnalisi(503, "CHIAVE_ASSENTE", "Configura la chiave Anthropic con scripts\\Salva-ChiaveClaude.ps1 e riavvia il server.");
-        var base = payload(jpeg, caption);
+        var base = payload(jpeg, caption, catalogo);
         var ricerca = new RicercaRicette();
         var messaggi = base.getJsonArray("messages");
         var richiestaWeb = conOpzioni(Json.createObjectBuilder(base).remove("output_config").remove("fallbacks")
@@ -170,7 +192,7 @@ public final class ClaudeClient {
                         : "Appunti delle ricette consultate:\n" + ricerca.appunti()));
         var finale = Json.createObjectBuilder(base).add("messages", Json.createArrayBuilder()
                 .add(Json.createObjectBuilder(utente).add("content", dati))).build();
-        return InterpreteProposta.interpreta(invia(finale), !caption.isBlank(), ricerca.fonti(), modello);
+        return InterpreteProposta.interpreta(invia(finale), !caption.isBlank(), ricerca.fonti(), modello, catalogo);
     }
 
     /**
