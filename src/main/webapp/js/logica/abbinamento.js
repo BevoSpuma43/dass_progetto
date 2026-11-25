@@ -67,17 +67,26 @@ export function corrispondeAllaRicerca(nome, preparazione, filtro) {
  */
 export function suggerisci(riga, catalogo) {
   if (riga.sceltaCatalogoManuale === true || typeof riga.voceCatalogoId === "string") return riga;
-  const originale = riga.nome;
-  const nome = alimento(originale);
+  let originale = riga.nome;
+  let nome = alimento(originale);
   const stato = typeof riga.stato === "string" ? riga.stato : "non_noto";
   const esito = {...riga};
   delete esito.notaAbbinamento;
-  let candidati = catalogo.filter(v => alimento(v.nome) === nome);
-  if (candidati.length === 0 && nome !== "") {
-    candidati = catalogo.filter(v => alimento(v.nome).startsWith(nome + " "));
+  let candidati = candidatiPer(nome, catalogo);
+  let notaParentesi = "";
+  // Claude spesso precisa varietà o preparazione tra parentesi, per esempio «Fusilli (pasta di semola)»:
+  // se il nome intero non trova schede, si prova senza quel testo e poi con il solo testo tra parentesi.
+  for (const alternativa of alternativeTraParentesi(originale)) {
+    if (candidati.length > 0) break;
+    const trovati = candidatiPer(alimento(alternativa), catalogo);
+    if (trovati.length === 0) continue;
+    originale = alternativa;
+    nome = alimento(alternativa);
+    candidati = trovati;
+    notaParentesi = "Scheda cercata come «" + alternativa + "»: verifica che corrisponda all’ingrediente. ";
   }
   let compatibili = candidati.filter(v => v.preparazione === stato);
-  let nota = notaVariante(originale);
+  let nota = notaParentesi + notaVariante(originale);
   if (compatibili.length === 0 && INGREDIENTI_DA_IMPASTO.has(nome) &&
       (stato === "non_noto" || riga.origineQuantita === "ricetta")) {
     compatibili = candidati.filter(v => v.preparazione === "crudo");
@@ -92,6 +101,21 @@ export function suggerisci(riga, catalogo) {
   if (nota === "" && alimento(voce.nome) !== nome) nota = "Verifica la variante proposta dal catalogo.";
   if (nota !== "") esito.notaAbbinamento = nota.trim();
   return {...esito, voceCatalogoId: voce.id, statoAbbinamento: "abbinato"};
+}
+
+/** Schede con lo stesso nome canonico; se non ce ne sono, quelle il cui nome lo prolunga. */
+function candidatiPer(nome, catalogo) {
+  if (nome === "") return [];
+  const uguali = catalogo.filter(v => alimento(v.nome) === nome);
+  return uguali.length > 0 ? uguali : catalogo.filter(v => alimento(v.nome).startsWith(nome + " "));
+}
+
+/** Il nome senza le parti tra parentesi, poi il contenuto di ciascuna parentesi. */
+function alternativeTraParentesi(nome) {
+  const interne = [...nome.matchAll(/\(([^()]*)\)/gu)].map(m => m[1].trim());
+  if (interne.length === 0) return [];
+  const esterno = nome.replace(/\s*\([^()]*\)/gu, " ").replace(/\s+/gu, " ").trim();
+  return [esterno, ...interne].filter(testo => testo !== "");
 }
 
 /** Spiega le assunzioni quando il nome indica una variante più specifica o più generica della scheda. */

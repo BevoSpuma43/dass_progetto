@@ -7,6 +7,7 @@ import java.net.http.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.logging.Logger;
 
 /**
  * Coordina ricerca ricette e proposta strutturata tramite Anthropic Messages. Il modello predefinito è
@@ -14,6 +15,7 @@ import java.util.Base64;
  * ({@code output_config.format}), perché questo modello non accetta un {@code tool_choice} forzato.
  */
 public final class ClaudeClient {
+    private static final Logger LOG = Logger.getLogger(ClaudeClient.class.getName());
     public static final String MODELLO_PREDEFINITO = "claude-sonnet-5-5";
     /** Beta del fallback lato server: una richiesta rifiutata dai classificatori può essere ripetuta con un altro modello. */
     static final String BETA_FALLBACK = "server-side-fallback-2026-07-01";
@@ -153,9 +155,12 @@ public final class ClaudeClient {
                             .add("role", "assistant").add("content", blocchi)).build();
                 }
             }
+            LOG.info("Ricerca delle ricette: " + ricerca.riepilogo() + ".");
         } catch (ErroreAnalisi e) {
             // Alcuni account consentono Messages ma hanno la ricerca disabilitata.
             if (!"RICHIESTA_RIFIUTATA".equals(e.codice()) && !"ACCESSO_NEGATO".equals(e.codice())) throw e;
+            LOG.warning("Ricerca delle ricette rifiutata (" + e.codice() + "): la proposta userà solo foto e descrizione. "
+                    + "Verifica che Web search sia abilitato per l'organizzazione nella Claude Console.");
         } catch (JsonException | ClassCastException | NullPointerException e) {
             throw new ErroreAnalisi(502, "RISPOSTA_NON_VALIDA", "Risposta della ricerca illeggibile.");
         }
@@ -180,6 +185,7 @@ public final class ClaudeClient {
         var richiesta = costruttore.POST(HttpRequest.BodyPublishers.ofString(payload.toString())).build();
         try {
             var esito = trasporto.invia(richiesta);
+            if (esito.status() != 200) LOG.warning("Anthropic ha risposto HTTP " + esito.status() + dettaglioErrore(esito.corpo()));
             switch (esito.status()) {
                 case 200: return esito.corpo();
                 case 401, 403: throw new ErroreAnalisi(502, "ACCESSO_NEGATO", "Anthropic ha rifiutato le credenziali o l’accesso al modello.");
@@ -195,6 +201,18 @@ public final class ClaudeClient {
             throw new ErroreAnalisi(503, "INTERROTTA", "La richiesta è stata interrotta.");
         } catch (IOException e) {
             throw new ErroreAnalisi(503, "RETE", "Connessione ad Anthropic non riuscita.");
+        }
+    }
+
+    /** Tipo e messaggio dell'errore restituito da Anthropic, per il log; vuoto se il corpo non li contiene. */
+    static String dettaglioErrore(String corpo) {
+        try (var reader = Json.createReader(new StringReader(corpo == null ? "" : corpo))) {
+            var errore = reader.readObject().getJsonObject("error");
+            String messaggio = errore.getString("message", "");
+            if (messaggio.length() > 300) messaggio = messaggio.substring(0, 300) + "…";
+            return ": " + errore.getString("type", "errore") + " · " + messaggio;
+        } catch (RuntimeException e) {
+            return "";
         }
     }
 

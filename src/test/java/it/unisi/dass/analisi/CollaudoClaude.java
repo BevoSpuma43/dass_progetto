@@ -27,7 +27,36 @@ public class CollaudoClaude {
         verificaRichieste(jpeg);
         verificaCorrezioni(jpeg);
         verificaErrori(jpeg);
-        System.out.println("OK: foto, richieste per Sonnet 5.5, ricerca, output strutturato, correzioni delle righe ed errori.");
+        verificaDiagnostica();
+        System.out.println("OK: foto, richieste per Sonnet 5.5, ricerca, output strutturato, correzioni delle righe, errori e diagnostica.");
+    }
+
+    /** Il log riassume ricerche, errori dello strumento e fonti, e riporta il motivo di un rifiuto di Anthropic. */
+    private static void verificaDiagnostica() {
+        var ricerca = new RicercaRicette();
+        try (var reader = Json.createReader(new StringReader("""
+                [{"type":"server_tool_use","id":"s1","name":"web_search","input":{"query":"fusilli al pomodoro"}},
+                 {"type":"web_search_tool_result","tool_use_id":"s1","content":{"type":"web_search_tool_result_error","error_code":"max_uses_exceeded"}},
+                 {"type":"text","text":"Fusilli 320 g per quattro persone.",
+                  "citations":[{"type":"web_search_result_location","title":"Fusilli","url":"https://example.org/fusilli"}]}]
+                """))) {
+            ricerca.raccogli(reader.readArray());
+        }
+        verifica(ricerca.riepilogo().equals("ricerche eseguite 1, risultati 0, errori dello strumento [max_uses_exceeded], fonti citate 1"),
+                "riepilogo della ricerca: " + ricerca.riepilogo());
+        var conRisultati = new RicercaRicette();
+        try (var reader = Json.createReader(new StringReader("""
+                [{"type":"web_search_tool_result","tool_use_id":"s2","content":[
+                  {"type":"web_search_result","url":"https://example.org/a","title":"A"},
+                  {"type":"web_search_result","url":"https://example.org/b","title":"B"}]}]
+                """))) {
+            conRisultati.raccogli(reader.readArray());
+        }
+        verifica(conRisultati.riepilogo().equals("ricerche eseguite 0, risultati 2, errori dello strumento [], fonti citate 0"),
+                "risultati contati senza diventare fonti: " + conRisultati.riepilogo());
+        verifica(ClaudeClient.dettaglioErrore("{\"type\":\"error\",\"error\":{\"type\":\"invalid_request_error\",\"message\":\"web search non abilitato\"}}")
+                .equals(": invalid_request_error · web search non abilitato"), "dettaglio dell'errore di Anthropic");
+        verifica(ClaudeClient.dettaglioErrore("<html>").isEmpty() && ClaudeClient.dettaglioErrore(null).isEmpty(), "corpo senza errore JSON");
     }
 
     /** La foto viene ricodificata in JPEG senza metadati e ridotta a 1280 pixel. */
@@ -84,7 +113,10 @@ public class CollaudoClaude {
         }).analizza(jpeg, CAPTION);
         verifica(invii.size() == 3, "pausa della ricerca ripresa");
         var ricerca = invii.get(0);
-        verifica(ricerca.getJsonArray("tools").getJsonObject(0).getString("type").equals("web_search_20260209"), "web search con filtro dinamico");
+        var strumento = ricerca.getJsonArray("tools").getJsonObject(0);
+        verifica(strumento.getString("type").equals("web_search_20260209"), "web search recente per Sonnet 5.5");
+        verifica(strumento.getJsonArray("allowed_callers").toString().equals("[\"direct\"]"),
+                "ricerca diretta: il filtro dinamico toglierebbe le citazioni");
         verifica(ricerca.getJsonObject("output_config").getString("effort").equals("low"), "effort basso per la ricerca");
         verifica(!ricerca.getJsonObject("output_config").containsKey("format"), "ricerca senza output strutturato");
         verifica(invii.get(1).getJsonArray("messages").size() == 2, "turno in pausa ripreso con la risposta");
