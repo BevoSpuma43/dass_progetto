@@ -31,7 +31,8 @@ public class CollaudoDocumenti {
         transazione(emf, em -> { AvvioArchivio.inizializza(em); return null; });
         verificaMigrazione(emf);
         long voci = transazione(emf, em -> em.createQuery("select count(v) from VoceCatalogo v", Long.class).getSingleResult());
-        verifica(voci >= 369 + 6, "catalogo importato (" + voci + " schede)");
+        verifica(voci >= 450, "catalogo importato (" + voci + " schede)");
+        verificaCatalogo(emf);
         verificaDocumenti(emf);
         emf.close();
 
@@ -67,6 +68,31 @@ public class CollaudoDocumenti {
         verifica(profili.size() == 2 && profili.getJsonObject(0).getString("id").equals("utente1")
                 && profili.getJsonObject(1).getString("id").equals("utente2"), "solo utente1 e utente2");
         verifica(!profili.toString().contains("paz-demo"), "paz-demo non ricreato");
+    }
+
+    /**
+     * Catalogo v2: carboidrati disponibili, niente schede sintetiche, e un archivio che ha ancora i vecchi
+     * valori sintetici viene corretto mantenendo gli id.
+     */
+    private static void verificaCatalogo(EntityManagerFactory emf) {
+        var pasta = transazione(emf, em -> em.find(VoceCatalogo.class, "pasta-v1").json());
+        verifica(pasta.getString("nome").equals("Pasta di semola secca, cruda")
+                && pasta.getJsonObject("per100g").getJsonNumber("carboidratiG").doubleValue() == 71.5, "pasta secca a 71,5 g di carboidrati");
+        verifica(transazione(emf, em -> em.find(VoceCatalogo.class, "pasta-cotta-v1").per100g.carboidratiG) == 34.0, "pasta cotta CREA in carboidrati disponibili");
+        long sintetiche = transazione(emf, em -> em.createQuery("select count(v) from VoceCatalogo v where v.fonte like 'DASS%'", Long.class).getSingleResult());
+        verifica(sintetiche == 0, "nessuna scheda sintetica");
+
+        // Un archivio della versione precedente: pasta-v1 sintetica e catalogo v2 non ancora importato.
+        transazione(emf, em -> {
+            em.createQuery("update VoceCatalogo v set v.nome = 'Pasta', v.fonte = 'DASS, valori sintetici per 100 g', "
+                    + "v.per100g.carboidratiG = 60 where v.id = 'pasta-v1'").executeUpdate();
+            em.remove(em.find(CaricamentoDemo.class, "catalogo-it-v2-schede"));
+            return null;
+        });
+        transazione(emf, em -> { AvvioArchivio.inizializza(em); return null; });
+        var corretta = transazione(emf, em -> em.find(VoceCatalogo.class, "pasta-v1").json());
+        verifica(corretta.getString("nome").equals("Pasta di semola secca, cruda") && corretta.getString("fonte").startsWith("USDA")
+                && corretta.getJsonObject("per100g").getJsonNumber("carboidratiG").doubleValue() == 71.5, "valori sintetici sostituiti all'avvio");
     }
 
     private static void verificaDocumenti(EntityManagerFactory emf) {

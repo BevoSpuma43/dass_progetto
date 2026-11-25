@@ -41,7 +41,6 @@ public class AvvioArchivio {
     /** Operazioni idempotenti: ripeterle a ogni avvio non cambia un archivio già pronto. */
     static void inizializza(EntityManager em) {
         rimuoviDiarioInChiaro(em);
-        CatalogoAggiuntivo.inizializza(em);
         CatalogoUsda.importa(em);
         for (var profilo : PROFILI) {
             if (em.find(Profilo.class, profilo[0]) == null) em.persist(new Profilo(profilo[0], profilo[1]));

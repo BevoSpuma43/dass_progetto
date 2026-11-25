@@ -8,7 +8,11 @@ import jakarta.persistence.FlushModeType;
 
 import java.util.HashSet;
 
-/** Importa le schede complete dal catalogo italiano e migra le etichette degli ID già presenti. */
+/**
+ * Importa le schede complete del catalogo italiano: inserisce quelle nuove e aggiorna nome, preparazione,
+ * fonte e valori di quelle già presenti, così una nuova versione del file corregge anche i valori salvati
+ * (per esempio le vecchie schede sintetiche di DASS, che mantengono l'id).
+ */
 final class CatalogoUsda {
     private static final String RISORSA = "/catalogo/catalogo_nutrizionale_it.json";
 
@@ -25,7 +29,7 @@ final class CatalogoUsda {
         try (var reader = Json.createReader(input)) {
             var catalogo = reader.readObject();
             String versione = catalogo.getString("versione");
-            String idCaricamento = versione + "-etichette-v2";
+            String idCaricamento = versione + "-schede";
             if (em.find(CaricamentoDemo.class, idCaricamento) != null) return;
 
             var esistenti = new HashSet<>(em.createQuery("select v.id from VoceCatalogo v", String.class).getResultList());
@@ -34,7 +38,7 @@ final class CatalogoUsda {
                 var valori = scheda.getJsonObject("per100g");
                 if (!validi(valori, "carboidratiG", "proteineG", "grassiG", "kcal")) continue;
                 if (esistenti.contains(scheda.getString("id"))) {
-                    aggiornaEtichetta(em, scheda);
+                    aggiornaScheda(em, scheda, valori);
                 } else {
                     inserisciVoce(em, scheda, valori);
                 }
@@ -58,15 +62,20 @@ final class CatalogoUsda {
         return true;
     }
 
-    /**
-     * Aggiorna direttamente nome e preparazione della scheda, conservandone l'ID e i valori
-     * nutrizionali salvati.
-     */
-    private static void aggiornaEtichetta(EntityManager em, JsonObject scheda) {
+    /** Aggiorna nome, preparazione, fonte, versione e valori per 100 g di una scheda esistente, conservandone l'ID. */
+    private static void aggiornaScheda(EntityManager em, JsonObject scheda, JsonObject valori) {
         // Aggiorna direttamente le colonne, anche con il change tracking di Payara.
-        em.createQuery("update VoceCatalogo v set v.nome = :nome, v.preparazione = :preparazione where v.id = :id")
+        em.createQuery("update VoceCatalogo v set v.nome = :nome, v.preparazione = :preparazione, v.fonte = :fonte, "
+                        + "v.versione = :versione, v.per100g.carboidratiG = :carboidrati, v.per100g.proteineG = :proteine, "
+                        + "v.per100g.grassiG = :grassi, v.per100g.kcal = :kcal where v.id = :id")
                 .setParameter("nome", scheda.getString("nome"))
                 .setParameter("preparazione", scheda.getString("preparazione"))
+                .setParameter("fonte", scheda.getString("fonte"))
+                .setParameter("versione", scheda.getString("versione"))
+                .setParameter("carboidrati", valori.getJsonNumber("carboidratiG").doubleValue())
+                .setParameter("proteine", valori.getJsonNumber("proteineG").doubleValue())
+                .setParameter("grassi", valori.getJsonNumber("grassiG").doubleValue())
+                .setParameter("kcal", valori.getJsonNumber("kcal").doubleValue())
                 .setParameter("id", scheda.getString("id"))
                 .setFlushMode(FlushModeType.COMMIT)
                 .executeUpdate();
