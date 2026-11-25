@@ -31,7 +31,7 @@ public class CollaudoDocumenti {
         transazione(emf, em -> { AvvioArchivio.inizializza(em); return null; });
         verificaMigrazione(emf);
         long voci = transazione(emf, em -> em.createQuery("select count(v) from VoceCatalogo v", Long.class).getSingleResult());
-        verifica(voci >= 450, "catalogo importato (" + voci + " schede)");
+        verifica(voci >= 500, "catalogo importato (" + voci + " schede)");
         verificaCatalogo(emf);
         verificaDocumenti(emf);
         emf.close();
@@ -71,8 +71,8 @@ public class CollaudoDocumenti {
     }
 
     /**
-     * Catalogo v2: carboidrati disponibili, niente schede sintetiche, e un archivio che ha ancora i vecchi
-     * valori sintetici viene corretto mantenendo gli id.
+     * Catalogo v3: carboidrati disponibili, niente schede sintetiche, le schede aggiunte per gli alimenti che
+     * mancavano, e un archivio che ha ancora i vecchi valori sintetici viene corretto mantenendo gli id.
      */
     private static void verificaCatalogo(EntityManagerFactory emf) {
         var pasta = transazione(emf, em -> em.find(VoceCatalogo.class, "pasta-v1").json());
@@ -81,12 +81,16 @@ public class CollaudoDocumenti {
         verifica(transazione(emf, em -> em.find(VoceCatalogo.class, "pasta-cotta-v1").per100g.carboidratiG) == 34.0, "pasta cotta CREA in carboidrati disponibili");
         long sintetiche = transazione(emf, em -> em.createQuery("select count(v) from VoceCatalogo v where v.fonte like 'DASS%'", Long.class).getSingleResult());
         verifica(sintetiche == 0, "nessuna scheda sintetica");
+        verifica(transazione(emf, em -> em.find(VoceCatalogo.class, "usda-sr-171410-v1").nome).equals("Olio di arachidi")
+                && transazione(emf, em -> em.find(VoceCatalogo.class, "usda-sr-170173-v1").nome).equals("Latte di cocco in lattina")
+                && transazione(emf, em -> em.find(VoceCatalogo.class, "crea-006591-v1").per100g.carboidratiG) == 31.1,
+                "olio di arachidi, latte di cocco e gnocchi CREA nel catalogo v3");
 
-        // Un archivio della versione precedente: pasta-v1 sintetica e catalogo v2 non ancora importato.
+        // Un archivio della versione precedente: pasta-v1 sintetica e catalogo v3 non ancora importato.
         transazione(emf, em -> {
             em.createQuery("update VoceCatalogo v set v.nome = 'Pasta', v.fonte = 'DASS, valori sintetici per 100 g', "
                     + "v.per100g.carboidratiG = 60 where v.id = 'pasta-v1'").executeUpdate();
-            em.remove(em.find(CaricamentoDemo.class, "catalogo-it-v2-schede"));
+            em.remove(em.find(CaricamentoDemo.class, "catalogo-it-v3-schede"));
             return null;
         });
         transazione(emf, em -> { AvvioArchivio.inizializza(em); return null; });

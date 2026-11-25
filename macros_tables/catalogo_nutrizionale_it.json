@@ -1,5 +1,5 @@
 {
-  "versione": "catalogo-it-v2",
+  "versione": "catalogo-it-v3",
   "unita": "per 100 g",
   "carboidrati": "disponibili: USDA per differenza meno fibra, CREA amido più zuccheri",
   "alimenti": [
@@ -7717,6 +7717,586 @@
       },
       "nomeOriginale": "Soup, vegetable broth, ready to serve",
       "fdcId": 171583
+    },
+    {
+      "id": "usda-sr-171410-v1",
+      "nome": "Olio di arachidi",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171410 (Oil, peanut, salad or cooking). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 0.0,
+        "grassiG": 100,
+        "kcal": 884
+      },
+      "nomeOriginale": "Oil, peanut, salad or cooking",
+      "fdcId": 171410
+    },
+    {
+      "id": "usda-sr-171025-v1",
+      "nome": "Olio di semi di girasole",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171025 (Oil, sunflower, linoleic, (approx. 65%)). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 0.0,
+        "grassiG": 100,
+        "kcal": 884
+      },
+      "nomeOriginale": "Oil, sunflower, linoleic, (approx. 65%)",
+      "fdcId": 171025
+    },
+    {
+      "id": "usda-sr-171029-v1",
+      "nome": "Olio di semi di mais",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171029 (Oil, corn, industrial and retail, all purpose salad or cooking). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 0.0,
+        "grassiG": 100,
+        "kcal": 900
+      },
+      "nomeOriginale": "Oil, corn, industrial and retail, all purpose salad or cooking",
+      "fdcId": 171029
+    },
+    {
+      "id": "usda-sr-171401-v1",
+      "nome": "Strutto",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171401 (Lard). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 0.0,
+        "grassiG": 100,
+        "kcal": 902
+      },
+      "nomeOriginale": "Lard",
+      "fdcId": 171401
+    },
+    {
+      "id": "usda-sr-172349-v1",
+      "nome": "Margarina vegetale (80% di grassi)",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 172349 (Margarine, regular, 80% fat, composite, tub, without salt). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.75,
+        "proteineG": 0.22,
+        "grassiG": 80.2,
+        "kcal": 713
+      },
+      "nomeOriginale": "Margarine, regular, 80% fat, composite, tub, without salt",
+      "fdcId": 172349
+    },
+    {
+      "id": "usda-sr-170843-v1",
+      "nome": "Fontina",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 170843 (Cheese, fontina). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 1.55,
+        "proteineG": 25.6,
+        "grassiG": 31.1,
+        "kcal": 389
+      },
+      "nomeOriginale": "Cheese, fontina",
+      "fdcId": 170843
+    },
+    {
+      "id": "usda-sr-170173-v1",
+      "nome": "Latte di cocco in lattina",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 170173 (Nuts, coconut milk, canned (liquid expressed from grated meat and water)). Carboidrati disponibili: per differenza meno fibra stimata (1,1 g) con il rapporto fibra/carboidrati di SR Legacy FDC ID 170172.",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 1.71,
+        "proteineG": 2.02,
+        "grassiG": 21.3,
+        "kcal": 197
+      },
+      "nomeOriginale": "Nuts, coconut milk, canned (liquid expressed from grated meat and water)",
+      "fdcId": 170173
+    },
+    {
+      "id": "usda-sr-174573-v1",
+      "nome": "Mortadella",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174573 (Mortadella, beef, pork). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 3.05,
+        "proteineG": 16.4,
+        "grassiG": 25.4,
+        "kcal": 311
+      },
+      "nomeOriginale": "Mortadella, beef, pork",
+      "fdcId": 174573
+    },
+    {
+      "id": "usda-sr-174249-v1",
+      "nome": "Polpo lessato",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174249 (Mollusks, octopus, common, cooked, moist heat). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 4.4,
+        "proteineG": 29.8,
+        "grassiG": 2.08,
+        "kcal": 164
+      },
+      "nomeOriginale": "Mollusks, octopus, common, cooked, moist heat",
+      "fdcId": 174249
+    },
+    {
+      "id": "usda-sr-174217-v1",
+      "nome": "Cozze lessate, sgusciate",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174217 (Mollusks, mussel, blue, cooked, moist heat). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 7.39,
+        "proteineG": 23.8,
+        "grassiG": 4.48,
+        "kcal": 172
+      },
+      "nomeOriginale": "Mollusks, mussel, blue, cooked, moist heat",
+      "fdcId": 174217
+    },
+    {
+      "id": "usda-sr-171975-v1",
+      "nome": "Vongole lessate, sgusciate",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171975 (Mollusks, clam, mixed species, cooked, moist heat). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 5.13,
+        "proteineG": 25.6,
+        "grassiG": 1.95,
+        "kcal": 148
+      },
+      "nomeOriginale": "Mollusks, clam, mixed species, cooked, moist heat",
+      "fdcId": 171975
+    },
+    {
+      "id": "usda-sr-175120-v1",
+      "nome": "Sgombro cotto",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 175120 (Fish, mackerel, Atlantic, cooked, dry heat). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 23.8,
+        "grassiG": 17.8,
+        "kcal": 262
+      },
+      "nomeOriginale": "Fish, mackerel, Atlantic, cooked, dry heat",
+      "fdcId": 175120
+    },
+    {
+      "id": "usda-sr-173718-v1",
+      "nome": "Trota iridea d’allevamento, cotta",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 173718 (Fish, trout, rainbow, farmed, cooked, dry heat). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 23.8,
+        "grassiG": 7.38,
+        "kcal": 168
+      },
+      "nomeOriginale": "Fish, trout, rainbow, farmed, cooked, dry heat",
+      "fdcId": 173718
+    },
+    {
+      "id": "usda-sr-175139-v1",
+      "nome": "Sardine sott’olio sgocciolate",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 175139 (Fish, sardine, Atlantic, canned in oil, drained solids with bone). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 24.6,
+        "grassiG": 11.4,
+        "kcal": 208
+      },
+      "nomeOriginale": "Fish, sardine, Atlantic, canned in oil, drained solids with bone",
+      "fdcId": 175139
+    },
+    {
+      "id": "usda-sr-174928-v1",
+      "nome": "Pangrattato",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174928 (Bread, crumbs, dry, grated, plain). Carboidrati disponibili: per differenza meno fibra (4,5 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 67.5,
+        "proteineG": 13.4,
+        "grassiG": 5.3,
+        "kcal": 395
+      },
+      "nomeOriginale": "Bread, crumbs, dry, grated, plain",
+      "fdcId": 174928
+    },
+    {
+      "id": "usda-sr-174648-v1",
+      "nome": "Fiocchi di mais (corn flakes)",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174648 (Cereals ready-to-eat, RALSTON Corn Flakes). Carboidrati disponibili: per differenza meno fibra (2,7 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 85.3,
+        "proteineG": 5.9,
+        "grassiG": 0.91,
+        "kcal": 384
+      },
+      "nomeOriginale": "Cereals ready-to-eat, RALSTON Corn Flakes",
+      "fdcId": 174648
+    },
+    {
+      "id": "usda-sr-172094-v1",
+      "nome": "Tortellini freschi ripieni di formaggio, crudi",
+      "preparazione": "crudo",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 172094 (Tortellini, pasta with cheese filling, fresh-refrigerated, as purchased). Carboidrati disponibili: per differenza meno fibra (1,9 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 45.1,
+        "proteineG": 13.5,
+        "grassiG": 7.23,
+        "kcal": 307
+      },
+      "nomeOriginale": "Tortellini, pasta with cheese filling, fresh-refrigerated, as purchased",
+      "fdcId": 172094
+    },
+    {
+      "id": "usda-sr-172476-v1",
+      "nome": "Tofu",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 172476 (Tofu, raw, regular, prepared with calcium sulfate). Carboidrati disponibili: per differenza meno fibra (0,3 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 1.57,
+        "proteineG": 8.08,
+        "grassiG": 4.78,
+        "kcal": 76.0
+      },
+      "nomeOriginale": "Tofu, raw, regular, prepared with calcium sulfate",
+      "fdcId": 172476
+    },
+    {
+      "id": "usda-sr-167747-v1",
+      "nome": "Succo di limone fresco",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 167747 (Lemon juice, raw). Carboidrati disponibili: per differenza meno fibra (0,3 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 6.6,
+        "proteineG": 0.35,
+        "grassiG": 0.24,
+        "kcal": 22.0
+      },
+      "nomeOriginale": "Lemon juice, raw",
+      "fdcId": 167747
+    },
+    {
+      "id": "usda-sr-173753-v1",
+      "nome": "Fave secche lessate",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 173753 (Broadbeans (fava beans), mature seeds, cooked, boiled, without salt). Carboidrati disponibili: per differenza meno fibra (5,4 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 14.2,
+        "proteineG": 7.6,
+        "grassiG": 0.4,
+        "kcal": 110
+      },
+      "nomeOriginale": "Broadbeans (fava beans), mature seeds, cooked, boiled, without salt",
+      "fdcId": 173753
+    },
+    {
+      "id": "usda-sr-168386-v1",
+      "nome": "Carciofi lessati",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 168386 (Artichokes, (globe or french), cooked, boiled, drained, without salt). Carboidrati disponibili: per differenza meno fibra (5,7 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 6.3,
+        "proteineG": 2.89,
+        "grassiG": 0.34,
+        "kcal": 53.0
+      },
+      "nomeOriginale": "Artichokes, (globe or french), cooked, boiled, drained, without salt",
+      "fdcId": 168386
+    },
+    {
+      "id": "usda-sr-170401-v1",
+      "nome": "Bietole lessate",
+      "preparazione": "cotto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 170401 (Chard, swiss, cooked, boiled, drained, without salt). Carboidrati disponibili: per differenza meno fibra (2,1 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 2.03,
+        "proteineG": 1.88,
+        "grassiG": 0.08,
+        "kcal": 20.0
+      },
+      "nomeOriginale": "Chard, swiss, cooked, boiled, drained, without salt",
+      "fdcId": 170401
+    },
+    {
+      "id": "usda-sr-170388-v1",
+      "nome": "Cavolo verza crudo",
+      "preparazione": "crudo",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 170388 (Cabbage, savoy, raw). Carboidrati disponibili: per differenza meno fibra (3,1 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 3.0,
+        "proteineG": 2.0,
+        "grassiG": 0.1,
+        "kcal": 27.0
+      },
+      "nomeOriginale": "Cabbage, savoy, raw",
+      "fdcId": 170388
+    },
+    {
+      "id": "usda-sr-169246-v1",
+      "nome": "Porri crudi",
+      "preparazione": "crudo",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 169246 (Leeks, (bulb and lower leaf-portion), raw). Carboidrati disponibili: per differenza meno fibra (1,8 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 12.4,
+        "proteineG": 1.5,
+        "grassiG": 0.3,
+        "kcal": 61.0
+      },
+      "nomeOriginale": "Leeks, (bulb and lower leaf-portion), raw",
+      "fdcId": 169246
+    },
+    {
+      "id": "usda-sr-172238-v1",
+      "nome": "Capperi sgocciolati",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 172238 (Capers, canned). Carboidrati disponibili: per differenza meno fibra (3,2 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 1.69,
+        "proteineG": 2.36,
+        "grassiG": 0.86,
+        "kcal": 23.0
+      },
+      "nomeOriginale": "Capers, canned",
+      "fdcId": 172238
+    },
+    {
+      "id": "usda-sr-174277-v1",
+      "nome": "Salsa di soia",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174277 (Soy sauce made from soy and wheat (shoyu)). Carboidrati disponibili: per differenza meno fibra (0,8 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 4.13,
+        "proteineG": 8.14,
+        "grassiG": 0.57,
+        "kcal": 53.0
+      },
+      "nomeOriginale": "Soy sauce made from soy and wheat (shoyu)",
+      "fdcId": 174277
+    },
+    {
+      "id": "usda-sr-174525-v1",
+      "nome": "Besciamella",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174525 (Sauce, homemade, white, medium). Carboidrati disponibili: per differenza meno fibra (0,2 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 8.97,
+        "proteineG": 3.84,
+        "grassiG": 10.6,
+        "kcal": 147
+      },
+      "nomeOriginale": "Sauce, homemade, white, medium",
+      "fdcId": 174525
+    },
+    {
+      "id": "usda-sr-170150-v1",
+      "nome": "Semi di sesamo",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 170150 (Seeds, sesame seeds, whole, dried). Carboidrati disponibili: per differenza meno fibra (11,8 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 11.6,
+        "proteineG": 17.7,
+        "grassiG": 49.7,
+        "kcal": 573
+      },
+      "nomeOriginale": "Seeds, sesame seeds, whole, dried",
+      "fdcId": 170150
+    },
+    {
+      "id": "usda-sr-174854-v1",
+      "nome": "Aranciata",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 174854 (Beverages, carbonated, orange). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 12.3,
+        "proteineG": 0.0,
+        "grassiG": 0.0,
+        "kcal": 48.0
+      },
+      "nomeOriginale": "Beverages, carbonated, orange",
+      "fdcId": 174854
+    },
+    {
+      "id": "usda-sr-171869-v1",
+      "nome": "Acqua tonica",
+      "preparazione": "non_noto",
+      "fonte": "USDA FoodData Central, SR Legacy, FDC ID 171869 (Beverages, carbonated, tonic water). Carboidrati disponibili: per differenza meno fibra (0 g).",
+      "versione": "usda-sr-legacy-2018",
+      "per100g": {
+        "carboidratiG": 8.8,
+        "proteineG": 0.0,
+        "grassiG": 0.0,
+        "kcal": 34.0
+      },
+      "nomeOriginale": "Beverages, carbonated, tonic water",
+      "fdcId": 171869
+    },
+    {
+      "id": "crea-006590-v1",
+      "nome": "Gnocchi di patate, crudi",
+      "preparazione": "crudo",
+      "fonte": "CREA, Gnocchi di patate, crudi (www.alimentinutrizione.it/tabelle-nutrizionali/006590). Carboidrati disponibili come amido più zuccheri (33,2 + 1,4 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 1,9 g.",
+      "versione": "CREA-006590-v2",
+      "per100g": {
+        "carboidratiG": 34.6,
+        "proteineG": 3.9,
+        "grassiG": 0.3,
+        "kcal": 164
+      }
+    },
+    {
+      "id": "crea-006591-v1",
+      "nome": "Gnocchi di patate, cotti",
+      "preparazione": "cotto",
+      "fonte": "CREA, Gnocchi di patate, cotti (www.alimentinutrizione.it/tabelle-nutrizionali/006591). Carboidrati disponibili come amido più zuccheri (30,1 + 1 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 1,8 g.",
+      "versione": "CREA-006591-v2",
+      "per100g": {
+        "carboidratiG": 31.1,
+        "proteineG": 3.5,
+        "grassiG": 0.2,
+        "kcal": 147
+      }
+    },
+    {
+      "id": "crea-164800-v1",
+      "nome": "Mascarpone",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Mascarpone (www.alimentinutrizione.it/tabelle-nutrizionali/164800). Carboidrati disponibili come amido più zuccheri (0 + 0,3 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 0 g.",
+      "versione": "CREA-164800-v2",
+      "per100g": {
+        "carboidratiG": 0.3,
+        "proteineG": 7.6,
+        "grassiG": 47.0,
+        "kcal": 455
+      }
+    },
+    {
+      "id": "crea-110535-v1",
+      "nome": "Prosciutto crudo",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Prosciutto crudo, Nazionale (www.alimentinutrizione.it/tabelle-nutrizionali/110535). Carboidrati disponibili come pubblicati da CREA (0,1 g), senza distinzione tra amido e zuccheri. Fibra 0 g.",
+      "versione": "CREA-110535-v2",
+      "per100g": {
+        "carboidratiG": 0.1,
+        "proteineG": 27.8,
+        "grassiG": 13.7,
+        "kcal": 235
+      }
+    },
+    {
+      "id": "crea-110020-v1",
+      "nome": "Bresaola",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Bresaola della Valtellina IGP (www.alimentinutrizione.it/tabelle-nutrizionali/110020). Carboidrati disponibili come pubblicati da CREA (0,4 g), senza distinzione tra amido e zuccheri. Fibra 0 g.",
+      "versione": "CREA-110020-v2",
+      "per100g": {
+        "carboidratiG": 0.4,
+        "proteineG": 33.1,
+        "grassiG": 2.0,
+        "kcal": 152
+      }
+    },
+    {
+      "id": "crea-110800-v1",
+      "nome": "Speck",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Speck dell’Alto Adige IGP (www.alimentinutrizione.it/tabelle-nutrizionali/110800). Carboidrati disponibili come pubblicati da CREA (1,2 g), senza distinzione tra amido e zuccheri. Fibra 0 g.",
+      "versione": "CREA-110800-v2",
+      "per100g": {
+        "carboidratiG": 1.2,
+        "proteineG": 30.7,
+        "grassiG": 19.1,
+        "kcal": 299
+      }
+    },
+    {
+      "id": "crea-167250-v1",
+      "nome": "Stracchino",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Stracchino (www.alimentinutrizione.it/tabelle-nutrizionali/167250). Carboidrati disponibili in tracce, considerati 0 g. Fibra 0 g.",
+      "versione": "CREA-167250-v2",
+      "per100g": {
+        "carboidratiG": 0.0,
+        "proteineG": 18.5,
+        "grassiG": 25.1,
+        "kcal": 300
+      }
+    },
+    {
+      "id": "crea-002000-v1",
+      "nome": "Grissini",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Grissini (www.alimentinutrizione.it/tabelle-nutrizionali/002000). Carboidrati disponibili come amido più zuccheri (57,2 + 2,2 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 3,5 g.",
+      "versione": "CREA-002000-v2",
+      "per100g": {
+        "carboidratiG": 59.4,
+        "proteineG": 11.3,
+        "grassiG": 13.9,
+        "kcal": 421
+      }
+    },
+    {
+      "id": "crea-166820-v1",
+      "nome": "Ricotta di vacca",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Ricotta di vacca (www.alimentinutrizione.it/tabelle-nutrizionali/166820). Carboidrati disponibili come amido più zuccheri (0 + 3,5 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 0 g.",
+      "versione": "CREA-166820-v2",
+      "per100g": {
+        "carboidratiG": 3.5,
+        "proteineG": 8.8,
+        "grassiG": 10.9,
+        "kcal": 146
+      }
+    },
+    {
+      "id": "crea-167200-v1",
+      "nome": "Scamorza",
+      "preparazione": "non_noto",
+      "fonte": "CREA, Scamorza (www.alimentinutrizione.it/tabelle-nutrizionali/167200). Carboidrati disponibili come amido più zuccheri (0 + 1 g): CREA li pubblica in equivalenti di monosaccaridi. Fibra 0 g.",
+      "versione": "CREA-167200-v2",
+      "per100g": {
+        "carboidratiG": 1.0,
+        "proteineG": 25.0,
+        "grassiG": 25.6,
+        "kcal": 334
+      }
     }
   ]
 }
