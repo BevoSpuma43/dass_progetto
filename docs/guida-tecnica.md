@@ -83,7 +83,7 @@ La chiave del diario è distinta da quella del canale: il canale protegge il tra
 Il modulo richiede foto, glicemia attuale, glicemia obiettivo (predefinita dai parametri del profilo, altrimenti 120 mg/dL) e il consenso all'invio di foto e descrizione a Payara e ad Anthropic. Il browser ricodifica la foto in JPEG senza metadati, crea la miniatura e, nella stessa azione `caricamento`:
 
 1. invia foto e descrizione a `POST /api/analisi-piatto` dentro il canale cifrato; Payara le inoltra a Claude e restituisce la proposta senza salvare nulla;
-2. collega gli ingredienti al catalogo e prepara la bozza;
+2. usa per ogni ingrediente la scheda del catalogo scelta da Claude (o la cerca per nome se Claude non ne indica una) e prepara la bozza;
 3. cifra e salva foto, miniatura e bozza.
 
 Se Claude non è disponibile (chiave assente, errore del fornitore) la bozza viene creata vuota con la foto, e gli ingredienti si inseriscono a mano. Se il salvataggio fallisce dopo l'analisi, la proposta resta sullo schermo con **Salva di nuovo la bozza cifrata**. Una bozza si riapre con `analisi.html?bozza=<uuid>` o dalla Home.
@@ -125,9 +125,13 @@ Sequenza per l'orale:
 
 ## Catalogo nutrizionale
 
-`mvn clean verify` include nel WAR [`macros_tables/catalogo_nutrizionale_it.json`](../macros_tables/catalogo_nutrizionale_it.json): 424 alimenti dell'export USDA Foundation Foods del 29 ottobre 2026, con nome tradotto, nome originale, ID e macronutrienti, più schede aggiuntive per farina 0, burro, zucchero di canna grezzo, lievito di birra secco e sale. Payara importa le schede complete. La pasta cotta riporta fonte e valori CREA; sugo, olio, riso, piselli e pasta cruda sono schede sintetiche di prova e vanno sostituite con fonti reali prima di un uso non didattico, perché influenzano carboidrati e bolo.
+`mvn clean verify` include nel WAR [`macros_tables/catalogo_nutrizionale_it.json`](../macros_tables/catalogo_nutrizionale_it.json), versione `catalogo-it-v2`: 515 schede, di cui 465 complete che Payara importa. Le fonti sono 424 alimenti di USDA Foundation Foods (export del 29 ottobre 2026), 87 di USDA SR Legacy (aprile 2018: alimenti cotti, pane, pasta, legumi lessati, formaggi italiani, condimenti, erbe, bevande), 3 schede CREA e lo zucchero di canna di Italia Zuccheri. Ogni scheda indica nella fonte l'ID dell'alimento e come sono calcolati i carboidrati.
 
-Il browser precompila **Voce del catalogo** quando la corrispondenza per nome e preparazione è univoca e segnala le approssimazioni. I valori sono per 100 g; le schede USDA riportano carboidrati totali per differenza, fibra inclusa, le schede CREA i carboidrati disponibili. [Documentazione USDA Foundation Foods](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/) · [Scheda CREA della pasta cotta](https://www.alimentinutrizione.it/tabelle-nutrizionali/000805)
+I carboidrati sono **disponibili, fibra esclusa**, come nelle etichette europee e nel conteggio dei carboidrati per il bolo: per USDA carboidrati per differenza meno fibra; per le poche schede vegetali di Foundation senza dato di fibra, la fibra è stimata con il rapporto fibra/carboidrati dell'alimento equivalente di SR Legacy; per CREA amido più zuccheri, perché CREA pubblica i carboidrati disponibili in equivalenti di monosaccaridi (amido × 1,10). Esempi: pasta di semola secca 71,5 g, pasta cotta 34,0 g, riso bollito 28,3 g, pane comune 46,0 g per 100 g.
+
+Le cinque schede sintetiche delle versioni precedenti (`pasta-v1`, `sugo-v1`, `olio-v1`, `riso-v1`, `piselli-v1`) mantengono l'id, così le bozze già salvate restano valide, ma hanno ora valori USDA reali. A ogni nuova versione del file `CatalogoUsda` inserisce le schede nuove e aggiorna nome, preparazione, fonte e valori di quelle già presenti.
+
+La richiesta della proposta contiene il catalogo come elenco numerato (numero, nome, preparazione, fonte) in un secondo blocco del prompt di sistema, con cache dei prompt perché resta identico tra un'analisi e l'altra. Per ogni ingrediente Claude indica in `voceCatalogo` il numero della scheda che descrive lo stesso alimento nella preparazione dei grammi, oppure null; `InterpreteProposta` lo riconduce all'id della scheda e scarta i numeri inesistenti. Nel browser la riga mostra «Scheda scelta da Claude» e resta da verificare se la scheda è cruda e i grammi cotti, o viceversa. Per le righe senza scelta e per quelle aggiunte a mano il browser precompila **Voce del catalogo** quando la corrispondenza per nome e preparazione è univoca e segnala le approssimazioni. I valori sono per 100 g. [Documentazione USDA Foundation Foods](https://fdc.nal.usda.gov/Foundation_Foods_Documentation/) · [Dataset USDA FoodData Central](https://fdc.nal.usda.gov/download-datasets) · [CREA, presentazione dei dati](https://www.alimentinutrizione.it/presentazione-dati) · [Scheda CREA della pasta cotta](https://www.alimentinutrizione.it/tabelle-nutrizionali/000805)
 
 ## Swagger UI e OpenAPI
 
